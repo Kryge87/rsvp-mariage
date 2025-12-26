@@ -182,22 +182,46 @@ export default function RSVPMariage() {
 
             {/* Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
-              {[
-                { label: 'Réponses', value: stats.total, color: 'rose', icon: '📝' },
-                { label: 'Personnes', value: stats.totalPersonnes, color: 'amber', icon: '👥' },
-                { label: 'Adultes', value: stats.adultes, color: 'blue', icon: '🧑' },
-                { label: 'Enfants', value: stats.enfants, color: 'purple', icon: '👶' },
-                { label: 'Cérémonie', value: stats.ceremonie, color: 'pink', icon: '💒' },
-                { label: 'Soirée', value: stats.soiree, color: 'indigo', icon: '🎉' },
-                { label: 'Végétarien', value: stats.vegetarien, color: 'green', icon: '🥬' },
-                { label: 'Sans porc', value: stats.sansPorc, color: 'orange', icon: '🚫' },
-              ].map((stat, i) => (
-                <div key={i} className={`bg-${stat.color}-50 rounded-xl p-3 text-center`}>
-                  <div className="text-2xl">{stat.icon}</div>
-                  <div className="text-2xl font-bold text-gray-800">{stat.value}</div>
-                  <div className="text-xs text-gray-600">{stat.label}</div>
-                </div>
-              ))}
+              <div className="bg-rose-50 rounded-xl p-3 text-center">
+                <div className="text-2xl">📝</div>
+                <div className="text-2xl font-bold text-gray-800">{stats.total}</div>
+                <div className="text-xs text-gray-600">Réponses</div>
+              </div>
+              <div className="bg-amber-50 rounded-xl p-3 text-center">
+                <div className="text-2xl">👥</div>
+                <div className="text-2xl font-bold text-gray-800">{stats.totalPersonnes}</div>
+                <div className="text-xs text-gray-600">Personnes</div>
+              </div>
+              <div className="bg-blue-50 rounded-xl p-3 text-center">
+                <div className="text-2xl">🧑</div>
+                <div className="text-2xl font-bold text-gray-800">{stats.adultes}</div>
+                <div className="text-xs text-gray-600">Adultes</div>
+              </div>
+              <div className="bg-purple-50 rounded-xl p-3 text-center">
+                <div className="text-2xl">👶</div>
+                <div className="text-2xl font-bold text-gray-800">{stats.enfants}</div>
+                <div className="text-xs text-gray-600">Enfants</div>
+              </div>
+              <div className="bg-pink-50 rounded-xl p-3 text-center">
+                <div className="text-2xl">💒</div>
+                <div className="text-2xl font-bold text-gray-800">{stats.ceremonie}</div>
+                <div className="text-xs text-gray-600">Cérémonie</div>
+              </div>
+              <div className="bg-indigo-50 rounded-xl p-3 text-center">
+                <div className="text-2xl">🎉</div>
+                <div className="text-2xl font-bold text-gray-800">{stats.soiree}</div>
+                <div className="text-xs text-gray-600">Soirée</div>
+              </div>
+              <div className="bg-green-50 rounded-xl p-3 text-center">
+                <div className="text-2xl">🥬</div>
+                <div className="text-2xl font-bold text-gray-800">{stats.vegetarien}</div>
+                <div className="text-xs text-gray-600">Végétarien</div>
+              </div>
+              <div className="bg-orange-50 rounded-xl p-3 text-center">
+                <div className="text-2xl">🚫</div>
+                <div className="text-2xl font-bold text-gray-800">{stats.sansPorc}</div>
+                <div className="text-xs text-gray-600">Sans porc</div>
+              </div>
             </div>
           </div>
 
@@ -436,20 +460,30 @@ export default function RSVPMariage() {
               </h2>
               
               <div className="grid grid-cols-3 gap-3 mb-4">
-                {[
-                  { id: 'classique', icon: '🍽️', label: 'Classique', color: 'amber' },
-                  { id: 'vegetarien', icon: '🥬', label: 'Végétarien', color: 'emerald' },
-                  { id: 'sans-porc', icon: '🚫🐷', label: 'Sans porc', color: 'orange' }
-                ].map((opt) => (
-                  <button key={opt.id} type="button"
-                    onClick={() => setFormData({ ...formData, preference: opt.id })}
-                    className={`p-4 rounded-xl border-2 transition text-center ${
-                      formData.preference === opt.id ? `border-${opt.color}-400 bg-${opt.color}-50` : 'border-gray-200 hover:border-gray-300'
-                    }`}>
-                    <div className="text-2xl mb-1">{opt.icon}</div>
-                    <div className="text-sm font-medium">{opt.label}</div>
-                  </button>
-                ))}
+                <button type="button"
+                  onClick={() => setFormData({ ...formData, preference: 'classique' })}
+                  className={`p-4 rounded-xl border-2 transition text-center ${
+                    formData.preference === 'classique' ? 'border-amber-400 bg-amber-50' : 'border-gray-200 hover:border-gray-300'
+                  }`}>
+                  <div className="text-2xl mb-1">🍽️</div>
+                  <div className="text-sm font-medium">Classique</div>
+                </button>
+                <button type="button"
+                  onClick={() => setFormData({ ...formData, preference: 'vegetarien' })}
+                  className={`p-4 rounded-xl border-2 transition text-center ${
+                    formData.preference === 'vegetarien' ? 'border-emerald-400 bg-emerald-50' : 'border-gray-200 hover:border-gray-300'
+                  }`}>
+                  <div className="text-2xl mb-1">🥬</div>
+                  <div className="text-sm font-medium">Végétarien</div>
+                </button>
+                <button type="button"
+                  onClick={() => setFormData({ ...formData, preference: 'sans-porc' })}
+                  className={`p-4 rounded-xl border-2 transition text-center ${
+                    formData.preference === 'sans-porc' ? 'border-orange-400 bg-orange-50' : 'border-gray-200 hover:border-gray-300'
+                  }`}>
+                  <div className="text-2xl mb-1">🚫🐷</div>
+                  <div className="text-sm font-medium">Sans porc</div>
+                </button>
               </div>
 
               <div>
