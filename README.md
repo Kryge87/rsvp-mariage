@@ -13,47 +13,6 @@
 
 ---
 
-## 🚀 ÉTAPE 1 : Créer un compte GitHub (2 min)
-
-1. Va sur **github.com**
-2. Clique sur **Sign up**
-3. Crée ton compte (email + mot de passe)
-4. Confirme ton email
-
----
-
-## 🚀 ÉTAPE 2 : Uploader le projet sur GitHub (3 min)
-
-### Option A : Via l'interface web (plus simple)
-
-1. Connecte-toi sur **github.com**
-2. Clique sur le **+** en haut à droite → **New repository**
-3. Nom du repository : `rsvp-mariage`
-4. Laisse en **Public**
-5. Clique **Create repository**
-6. Sur la page qui s'affiche, clique sur **uploading an existing file**
-7. Glisse tous les fichiers du dossier `rsvp-vercel` dans la zone
-8. Clique **Commit changes**
-
----
-
-## 🚀 ÉTAPE 3 : Déployer sur Vercel (2 min)
-
-1. Va sur **vercel.com**
-2. Clique **Sign up** → **Continue with GitHub**
-3. Autorise Vercel à accéder à ton GitHub
-4. Tu arrives sur le dashboard Vercel
-5. Clique **Add New...** → **Project**
-6. Tu vois ton repo `rsvp-mariage` → clique **Import**
-7. Laisse tout par défaut
-8. Clique **Deploy**
-9. ⏳ Attends 1-2 minutes...
-10. 🎉 **C'est en ligne !**
-
-Tu reçois une URL du type : `https://rsvp-mariage-xxx.vercel.app`
-
----
-
 ## 🚀 ÉTAPE 4 : Intégrer à WordPress (2 min)
 
 ### Méthode 1 : Avec un lien (le plus simple)
