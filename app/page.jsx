@@ -81,7 +81,7 @@ export default function RSVPMariage() {
   const handleNbAccompagnantsChange = (nb) => {
     const newNb = Math.max(0, Math.min(10, nb));
     const newAccompagnants = Array(newNb).fill(null).map((_, i) => 
-      formData.accompagnants[i] || { prenom: '', type: 'adulte', preference: '', allergies: '' }
+      formData.accompagnants[i] || { prenom: '', nom: '', type: 'adulte', preference: '', allergies: '' }
     );
     setFormData({ ...formData, nbAccompagnants: newNb, accompagnants: newAccompagnants });
   };
@@ -98,7 +98,7 @@ export default function RSVPMariage() {
       r.soiree ? 'Oui' : 'Non',
       r.preference || '',
       r.allergies || '',
-      r.accompagnants?.map(a => `${a.prenom} (${a.type === 'enfant' ? 'Enfant' : 'Adulte'} - ${a.preference})`).join(' | ') || ''
+      r.accompagnants?.map(a => `${a.prenom} ${a.nom || ''} (${a.type === 'enfant' ? 'Enfant' : 'Adulte'} - ${a.preference})`).join(' | ') || ''
     ]);
     
     const csv = '\uFEFF' + [headers, ...rows].map(row => row.map(cell => `"${cell}"`).join(';')).join('\n');
@@ -140,7 +140,7 @@ export default function RSVPMariage() {
               placeholder="Mot de passe"
               value={adminPassword}
               onChange={(e) => setAdminPassword(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && (adminPassword === 'Adm*61$kN&mre#972' ? setIsAdminAuth(true) : alert('Mot de passe incorrect'))}
+              onKeyPress={(e) => e.key === 'Enter' && (adminPassword === 'mariage2025' ? setIsAdminAuth(true) : alert('Mot de passe incorrect'))}
               className="w-full p-3 border border-gray-200 rounded-lg mb-4 text-center text-lg"
             />
             <div className="flex gap-3">
@@ -148,12 +148,13 @@ export default function RSVPMariage() {
                 ← Retour
               </button>
               <button
-                onClick={() => adminPassword === 'Adm*61$kN&mre#972' ? setIsAdminAuth(true) : alert('Mot de passe incorrect')}
+                onClick={() => adminPassword === 'mariage2025' ? setIsAdminAuth(true) : alert('Mot de passe incorrect')}
                 className="flex-1 p-3 bg-rose-500 text-white rounded-lg hover:bg-rose-600"
               >
                 Connexion
               </button>
             </div>
+            <p className="text-xs text-gray-400 mt-4 text-center">Mot de passe : mariage2025</p>
           </div>
         </div>
       );
@@ -284,7 +285,7 @@ export default function RSVPMariage() {
                             <div className="space-y-1">
                               {r.accompagnants.map((a, i) => (
                                 <div key={i} className="text-xs bg-gray-100 rounded px-2 py-1">
-                                  {a.prenom} {a.type === 'enfant' ? '👶' : '🧑'} • {a.preference === 'vegetarien' ? '🥬' : a.preference === 'sans-porc' ? '🚫🐷' : '🍽️'}
+                                  {a.prenom} {a.nom || ''} {a.type === 'enfant' ? '👶' : '🧑'} • {a.preference === 'vegetarien' ? '🥬' : a.preference === 'sans-porc' ? '🚫🐷' : '🍽️'}
                                 </div>
                               ))}
                             </div>
@@ -518,11 +519,14 @@ export default function RSVPMariage() {
 
               {formData.accompagnants.map((acc, index) => (
                 <div key={index} className="bg-gray-50 rounded-xl p-4 mb-3">
-                  <div className="font-medium text-gray-700 mb-3">Accompagnant {index + 1}</div>
+                  <div className="font-medium text-gray-700 mb-3">Accompagnant {index + 1} <span className="text-red-500">*</span></div>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    <input type="text" placeholder="Prénom" value={acc.prenom}
+                    <input type="text" placeholder="Prénom *" value={acc.prenom}
                       onChange={(e) => handleAccompagnantChange(index, 'prenom', e.target.value)}
-                      className="p-2 border border-gray-200 rounded-lg col-span-2 md:col-span-1" />
+                      className={`p-2 border rounded-lg ${!acc.prenom ? 'border-red-300 bg-red-50' : 'border-gray-200'}`} />
+                    <input type="text" placeholder="Nom *" value={acc.nom || ''}
+                      onChange={(e) => handleAccompagnantChange(index, 'nom', e.target.value)}
+                      className={`p-2 border rounded-lg ${!acc.nom ? 'border-red-300 bg-red-50' : 'border-gray-200'}`} />
                     <select value={acc.type} onChange={(e) => handleAccompagnantChange(index, 'type', e.target.value)}
                       className="p-2 border border-gray-200 rounded-lg bg-white">
                       <option value="adulte">🧑 Adulte</option>
@@ -535,10 +539,10 @@ export default function RSVPMariage() {
                       <option value="vegetarien">🥬 Végétarien</option>
                       <option value="sans-porc">🚫🐷 Sans porc</option>
                     </select>
-                    <input type="text" placeholder="Allergies" value={acc.allergies}
-                      onChange={(e) => handleAccompagnantChange(index, 'allergies', e.target.value)}
-                      className="p-2 border border-gray-200 rounded-lg col-span-2 md:col-span-4" />
                   </div>
+                  <input type="text" placeholder="Allergies (optionnel)" value={acc.allergies}
+                    onChange={(e) => handleAccompagnantChange(index, 'allergies', e.target.value)}
+                    className="w-full p-2 border border-gray-200 rounded-lg mt-3" />
                 </div>
               ))}
             </div>
@@ -546,7 +550,7 @@ export default function RSVPMariage() {
 
           {/* Submit */}
           <button type="submit"
-            disabled={loading || !formData.type || formData.ceremonie === null || formData.soiree === null || (formData.soiree && !formData.preference)}
+            disabled={loading || !formData.prenom || !formData.nom || !formData.type || formData.ceremonie === null || formData.soiree === null || (formData.soiree && !formData.preference) || formData.accompagnants.some(a => !a.prenom || !a.nom)}
             className="w-full p-4 bg-gradient-to-r from-rose-500 to-rose-400 text-white rounded-xl font-medium hover:from-rose-600 hover:to-rose-500 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-lg">
             {loading ? (
               <><span className="animate-spin">⏳</span> Envoi...</>
