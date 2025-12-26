@@ -140,7 +140,7 @@ export default function RSVPMariage() {
               placeholder="Mot de passe"
               value={adminPassword}
               onChange={(e) => setAdminPassword(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && (adminPassword === 'mariage2025' ? setIsAdminAuth(true) : alert('Mot de passe incorrect'))}
+              onKeyPress={(e) => e.key === 'Enter' && (adminPassword === 'Adm*61$kN&mre#972' ? setIsAdminAuth(true) : alert('Mot de passe incorrect'))}
               className="w-full p-3 border border-gray-200 rounded-lg mb-4 text-center text-lg"
             />
             <div className="flex gap-3">
@@ -148,13 +148,12 @@ export default function RSVPMariage() {
                 ← Retour
               </button>
               <button
-                onClick={() => adminPassword === 'mariage2025' ? setIsAdminAuth(true) : alert('Mot de passe incorrect')}
+                onClick={() => adminPassword === 'Adm*61$kN&mre#972' ? setIsAdminAuth(true) : alert('Mot de passe incorrect')}
                 className="flex-1 p-3 bg-rose-500 text-white rounded-lg hover:bg-rose-600"
               >
                 Connexion
               </button>
             </div>
-            <p className="text-xs text-gray-400 mt-4 text-center">Mot de passe : mariage2025</p>
           </div>
         </div>
       );
