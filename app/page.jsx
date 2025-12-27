@@ -2,14 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 
-// ⚠️ CONFIGURATION ADMIN - Hash SHA-256 uniquement (mots de passe cachés)
-// Pour changer les identifiants, génère un nouveau hash dans la console (F12) :
-// crypto.subtle.digest('SHA-256', new TextEncoder().encode('TON_MOT_DE_PASSE')).then(h => console.log(Array.from(new Uint8Array(h)).map(b => b.toString(16).padStart(2, '0')).join('')))
+// ⚠️ CONFIGURATION ADMIN
 const ADMIN_CONFIG = {
-  // Hash SHA-256 du code secret (étape 1)
-  secretCodeHash: '070b127bd121961aaa560d7947081bccf4943512d336a3ca6532857d7cb07f38',
-  // Hash SHA-256 du mot de passe (étape 2)
-  passwordHash: '1999d4de501953a9d841858b8dcb31ce256a04a40cbc942b4b240b6f619a5ae2',
+  secretCodeHash: 'cae61b1516500f2a600817d8e035822d9cd749056b4d5bd3c482577abc9354a5',
+  passwordHash: '89cd7f72efe0838dcbc97273d263b8c3ffb8946a097ca8464ad126ace881567b',
   maxAttempts: 3,
   lockoutMinutes: 5,
   sessionMinutes: 30
