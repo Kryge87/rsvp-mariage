@@ -14,7 +14,7 @@ export default function RSVPMariage() {
     prenom: '',
     nom: '',
     email: '',
-    type: '', // adulte ou enfant
+    type: 'adulte', // adulte par défaut
     ceremonie: null,
     soiree: null,
     nbAccompagnants: 0,
@@ -545,7 +545,7 @@ export default function RSVPMariage() {
             onClick={() => {
               setSubmitted(false);
               setFormData({
-                prenom: '', nom: '', email: '', type: '', ceremonie: null, soiree: null,
+                prenom: '', nom: '', email: '', type: 'adulte', ceremonie: null, soiree: null,
                 nbAccompagnants: 0, accompagnants: [], allergies: '', preference: ''
               });
             }}
@@ -605,33 +605,6 @@ export default function RSVPMariage() {
                 placeholder="votre@email.com"
               />
             </div>
-            
-            {/* Type: Adulte/Enfant */}
-            <div>
-              <label className="block text-sm text-gray-600 mb-2">Vous êtes *</label>
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setFormData({ ...formData, type: 'adulte' })}
-                  className={`flex-1 p-4 rounded-xl border-2 transition ${
-                    formData.type === 'adulte' ? 'border-blue-400 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  <div className="text-2xl mb-1">🧑</div>
-                  <div className="font-medium">Adulte</div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setFormData({ ...formData, type: 'enfant' })}
-                  className={`flex-1 p-4 rounded-xl border-2 transition ${
-                    formData.type === 'enfant' ? 'border-purple-400 bg-purple-50' : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  <div className="text-2xl mb-1">👶</div>
-                  <div className="font-medium">Enfant</div>
-                </button>
-              </div>
-            </div>
           </div>
 
           {/* Présence */}
@@ -640,32 +613,40 @@ export default function RSVPMariage() {
               <span>📅</span> Votre présence
             </h2>
             
-            <div className="mb-4">
-              <label className="block text-sm text-gray-600 mb-2">Serez-vous présent(e) à la cérémonie ? *</label>
+            {/* Cérémonie */}
+            <div className="mb-6 p-4 bg-pink-50 rounded-xl border border-pink-100">
+              <label className="block text-base font-bold text-gray-800 mb-3 flex items-center gap-2">
+                <span className="text-2xl">💒</span> La Cérémonie <span className="text-red-500">*</span>
+              </label>
+              <p className="text-sm text-gray-500 mb-3">Mariage civil et/ou religieux</p>
               <div className="flex gap-3">
                 <button type="button" onClick={() => setFormData({ ...formData, ceremonie: true })}
-                  className={`flex-1 p-4 rounded-xl border-2 transition ${formData.ceremonie === true ? 'border-green-400 bg-green-50' : 'border-gray-200 hover:border-gray-300'}`}>
+                  className={`flex-1 p-4 rounded-xl border-2 transition ${formData.ceremonie === true ? 'border-green-400 bg-green-50' : 'border-gray-200 bg-white hover:border-gray-300'}`}>
                   <div className="text-2xl mb-1">✓</div>
-                  <div className="font-medium">Oui</div>
+                  <div className="font-medium">Oui, je serai là</div>
                 </button>
                 <button type="button" onClick={() => setFormData({ ...formData, ceremonie: false })}
-                  className={`flex-1 p-4 rounded-xl border-2 transition ${formData.ceremonie === false ? 'border-gray-400 bg-gray-50' : 'border-gray-200 hover:border-gray-300'}`}>
+                  className={`flex-1 p-4 rounded-xl border-2 transition ${formData.ceremonie === false ? 'border-gray-400 bg-gray-100' : 'border-gray-200 bg-white hover:border-gray-300'}`}>
                   <div className="text-2xl mb-1">✗</div>
                   <div className="font-medium">Non</div>
                 </button>
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm text-gray-600 mb-2">Serez-vous présent(e) à la soirée ? *</label>
+            {/* Soirée */}
+            <div className="p-4 bg-amber-50 rounded-xl border border-amber-100">
+              <label className="block text-base font-bold text-gray-800 mb-3 flex items-center gap-2">
+                <span className="text-2xl">🎉</span> La Soirée <span className="text-red-500">*</span>
+              </label>
+              <p className="text-sm text-gray-500 mb-3">Cocktail, dîner et fête</p>
               <div className="flex gap-3">
                 <button type="button" onClick={() => setFormData({ ...formData, soiree: true })}
-                  className={`flex-1 p-4 rounded-xl border-2 transition ${formData.soiree === true ? 'border-green-400 bg-green-50' : 'border-gray-200 hover:border-gray-300'}`}>
-                  <div className="text-2xl mb-1">🎉</div>
-                  <div className="font-medium">Oui</div>
+                  className={`flex-1 p-4 rounded-xl border-2 transition ${formData.soiree === true ? 'border-green-400 bg-green-50' : 'border-gray-200 bg-white hover:border-gray-300'}`}>
+                  <div className="text-2xl mb-1">🥳</div>
+                  <div className="font-medium">Oui, je fais la fête !</div>
                 </button>
                 <button type="button" onClick={() => setFormData({ ...formData, soiree: false })}
-                  className={`flex-1 p-4 rounded-xl border-2 transition ${formData.soiree === false ? 'border-gray-400 bg-gray-50' : 'border-gray-200 hover:border-gray-300'}`}>
+                  className={`flex-1 p-4 rounded-xl border-2 transition ${formData.soiree === false ? 'border-gray-400 bg-gray-100' : 'border-gray-200 bg-white hover:border-gray-300'}`}>
                   <div className="text-2xl mb-1">😴</div>
                   <div className="font-medium">Non</div>
                 </button>
@@ -771,7 +752,7 @@ export default function RSVPMariage() {
 
           {/* Submit */}
           <button type="submit"
-            disabled={loading || !formData.prenom || !formData.nom || !formData.email || !formData.type || formData.ceremonie === null || formData.soiree === null || (formData.soiree && !formData.preference) || formData.accompagnants.some(a => !a.prenom || !a.nom)}
+            disabled={loading || !formData.prenom || !formData.nom || !formData.email || formData.ceremonie === null || formData.soiree === null || (formData.soiree && !formData.preference) || formData.accompagnants.some(a => !a.prenom || !a.nom)}
             className="w-full p-4 bg-gradient-to-r from-rose-500 to-rose-400 text-white rounded-xl font-medium hover:from-rose-600 hover:to-rose-500 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-lg">
             {loading ? (
               <><span className="animate-spin">⏳</span> Envoi...</>
