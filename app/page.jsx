@@ -127,19 +127,42 @@ export default function RSVPMariage() {
   };
 
   const exportCSV = () => {
-    const headers = ['Date', 'Prénom', 'Nom', 'Email', 'Type', 'Cérémonie', 'Soirée', 'Menu', 'Allergies', 'Accompagnants'];
-    const rows = responses.map(r => [
-      new Date(r.date).toLocaleDateString('fr-FR'),
-      r.prenom,
-      r.nom,
-      r.email || '',
-      r.type === 'enfant' ? 'Enfant' : 'Adulte',
-      r.ceremonie ? 'Oui' : 'Non',
-      r.soiree ? 'Oui' : 'Non',
-      r.preference || '',
-      r.allergies || '',
-      r.accompagnants?.map(a => `${a.prenom} ${a.nom || ''} (${a.type === 'enfant' ? 'Enfant' : 'Adulte'} - ${a.preference})`).join(' | ') || ''
-    ]);
+    const headers = ['Date', 'Prénom', 'Nom', 'Email', 'Type', 'Cérémonie', 'Soirée', 'Menu', 'Allergies', 'Rôle', 'Invité principal'];
+    const rows = [];
+    
+    responses.forEach(r => {
+      // Ligne pour l'invité principal
+      rows.push([
+        new Date(r.date).toLocaleDateString('fr-FR'),
+        r.prenom,
+        r.nom,
+        r.email || '',
+        r.type === 'enfant' ? 'Enfant' : 'Adulte',
+        r.ceremonie ? 'Oui' : 'Non',
+        r.soiree ? 'Oui' : 'Non',
+        r.preference || '',
+        r.allergies || '',
+        'Invité principal',
+        `${r.prenom} ${r.nom}`
+      ]);
+      
+      // Ligne pour chaque accompagnant
+      r.accompagnants?.forEach(a => {
+        rows.push([
+          new Date(r.date).toLocaleDateString('fr-FR'),
+          a.prenom,
+          a.nom || '',
+          '', // pas d'email pour les accompagnants
+          a.type === 'enfant' ? 'Enfant' : 'Adulte',
+          r.ceremonie ? 'Oui' : 'Non', // même présence que l'invité principal
+          r.soiree ? 'Oui' : 'Non',
+          a.preference || '',
+          a.allergies || '',
+          'Accompagnant',
+          `${r.prenom} ${r.nom}` // référence à l'invité principal
+        ]);
+      });
+    });
     
     const csv = '\uFEFF' + [headers, ...rows].map(row => row.map(cell => `"${cell}"`).join(';')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
