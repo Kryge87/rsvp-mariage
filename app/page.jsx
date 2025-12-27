@@ -2,17 +2,31 @@
 
 import React, { useState, useEffect } from 'react';
 
+// ⚠️ CONFIGURATION ADMIN - Hash SHA-256 uniquement (mots de passe cachés)
+// Pour changer les identifiants, génère un nouveau hash dans la console (F12) :
+// crypto.subtle.digest('SHA-256', new TextEncoder().encode('TON_MOT_DE_PASSE')).then(h => console.log(Array.from(new Uint8Array(h)).map(b => b.toString(16).padStart(2, '0')).join('')))
 const ADMIN_CONFIG = {
-  secretCode: 'MARIAGE', // Code secret (étape 1)
-  password: 'NotreBelleHistoire2025!', // Mot de passe (étape 2)
-  maxAttempts: 3, // Tentatives max avant blocage
-  lockoutMinutes: 5, // Durée du blocage en minutes
-  sessionMinutes: 30 // Durée de la session en minutes
+  // Hash SHA-256 du code secret (étape 1)
+  secretCodeHash: '070b127bd121961aaa560d7947081bccf4943512d336a3ca6532857d7cb07f38',
+  // Hash SHA-256 du mot de passe (étape 2)
+  passwordHash: '1999d4de501953a9d841858b8dcb31ce256a04a40cbc942b4b240b6f619a5ae2',
+  maxAttempts: 3,
+  lockoutMinutes: 5,
+  sessionMinutes: 30
 };
+
+// Fonction de hash SHA-256
+async function hashText(text) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(text);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
 
 export default function RSVPMariage() {
   const [view, setView] = useState('form');
-  const [adminStep, setAdminStep] = useState(1); // 1 = code secret, 2 = mot de passe
+  const [adminStep, setAdminStep] = useState(1);
   const [adminCode, setAdminCode] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
   const [isAdminAuth, setIsAdminAuth] = useState(false);
@@ -107,10 +121,11 @@ export default function RSVPMariage() {
     return Math.ceil((lockoutUntil - new Date()) / 1000);
   };
 
-  const handleCodeSubmit = () => {
+  const handleCodeSubmit = async () => {
     if (isLockedOut()) return;
     
-    if (adminCode.toUpperCase() === ADMIN_CONFIG.secretCode.toUpperCase()) {
+    const inputHash = await hashText(adminCode.toUpperCase());
+    if (inputHash === ADMIN_CONFIG.secretCodeHash) {
       setAdminStep(2);
       setAdminCode('');
     } else {
@@ -118,10 +133,11 @@ export default function RSVPMariage() {
     }
   };
 
-  const handlePasswordSubmit = () => {
+  const handlePasswordSubmit = async () => {
     if (isLockedOut()) return;
     
-    if (adminPassword === ADMIN_CONFIG.password) {
+    const inputHash = await hashText(adminPassword);
+    if (inputHash === ADMIN_CONFIG.passwordHash) {
       setIsAdminAuth(true);
       setLoginAttempts(0);
       setAdminPassword('');
