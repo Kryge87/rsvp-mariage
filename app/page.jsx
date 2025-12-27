@@ -2,10 +2,23 @@
 
 import React, { useState, useEffect } from 'react';
 
+const ADMIN_CONFIG = {
+  secretCode: 'MARIAGE', // Code secret (étape 1)
+  password: 'NotreBelleHistoire2025!', // Mot de passe (étape 2)
+  maxAttempts: 3, // Tentatives max avant blocage
+  lockoutMinutes: 5, // Durée du blocage en minutes
+  sessionMinutes: 30 // Durée de la session en minutes
+};
+
 export default function RSVPMariage() {
   const [view, setView] = useState('form');
+  const [adminStep, setAdminStep] = useState(1); // 1 = code secret, 2 = mot de passe
+  const [adminCode, setAdminCode] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
   const [isAdminAuth, setIsAdminAuth] = useState(false);
+  const [loginAttempts, setLoginAttempts] = useState(0);
+  const [lockoutUntil, setLockoutUntil] = useState(null);
+  const [sessionExpiry, setSessionExpiry] = useState(null);
   const [responses, setResponses] = useState([]);
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -25,7 +38,114 @@ export default function RSVPMariage() {
 
   useEffect(() => {
     loadResponses();
+    // Vérifier le lockout au chargement
+    const savedLockout = localStorage.getItem('admin-lockout');
+    if (savedLockout) {
+      const lockoutTime = new Date(savedLockout);
+      if (lockoutTime > new Date()) {
+        setLockoutUntil(lockoutTime);
+      } else {
+        localStorage.removeItem('admin-lockout');
+      }
+    }
+    // Vérifier la session
+    const savedSession = localStorage.getItem('admin-session');
+    if (savedSession) {
+      const sessionTime = new Date(savedSession);
+      if (sessionTime > new Date()) {
+        setIsAdminAuth(true);
+        setSessionExpiry(sessionTime);
+      } else {
+        localStorage.removeItem('admin-session');
+      }
+    }
   }, []);
+
+  // Vérifier l'expiration de session
+  useEffect(() => {
+    if (sessionExpiry && isAdminAuth) {
+      const checkSession = setInterval(() => {
+        if (new Date() > sessionExpiry) {
+          handleLogout();
+        }
+      }, 1000);
+      return () => clearInterval(checkSession);
+    }
+  }, [sessionExpiry, isAdminAuth]);
+
+  // Réinitialiser l'activité (prolonger la session)
+  const resetSessionTimer = () => {
+    if (isAdminAuth) {
+      const newExpiry = new Date(Date.now() + ADMIN_CONFIG.sessionMinutes * 60 * 1000);
+      setSessionExpiry(newExpiry);
+      localStorage.setItem('admin-session', newExpiry.toISOString());
+    }
+  };
+
+  const handleLogout = () => {
+    setIsAdminAuth(false);
+    setAdminStep(1);
+    setAdminCode('');
+    setAdminPassword('');
+    setSessionExpiry(null);
+    localStorage.removeItem('admin-session');
+  };
+
+  const isLockedOut = () => {
+    if (!lockoutUntil) return false;
+    if (new Date() > lockoutUntil) {
+      setLockoutUntil(null);
+      setLoginAttempts(0);
+      localStorage.removeItem('admin-lockout');
+      return false;
+    }
+    return true;
+  };
+
+  const getRemainingLockout = () => {
+    if (!lockoutUntil) return 0;
+    return Math.ceil((lockoutUntil - new Date()) / 1000);
+  };
+
+  const handleCodeSubmit = () => {
+    if (isLockedOut()) return;
+    
+    if (adminCode.toUpperCase() === ADMIN_CONFIG.secretCode.toUpperCase()) {
+      setAdminStep(2);
+      setAdminCode('');
+    } else {
+      handleFailedAttempt();
+    }
+  };
+
+  const handlePasswordSubmit = () => {
+    if (isLockedOut()) return;
+    
+    if (adminPassword === ADMIN_CONFIG.password) {
+      setIsAdminAuth(true);
+      setLoginAttempts(0);
+      setAdminPassword('');
+      const expiry = new Date(Date.now() + ADMIN_CONFIG.sessionMinutes * 60 * 1000);
+      setSessionExpiry(expiry);
+      localStorage.setItem('admin-session', expiry.toISOString());
+    } else {
+      handleFailedAttempt();
+    }
+  };
+
+  const handleFailedAttempt = () => {
+    const newAttempts = loginAttempts + 1;
+    setLoginAttempts(newAttempts);
+    
+    if (newAttempts >= ADMIN_CONFIG.maxAttempts) {
+      const lockout = new Date(Date.now() + ADMIN_CONFIG.lockoutMinutes * 60 * 1000);
+      setLockoutUntil(lockout);
+      localStorage.setItem('admin-lockout', lockout.toISOString());
+      setAdminStep(1);
+      setAdminCode('');
+      setAdminPassword('');
+    }
+  };
 
   const loadResponses = () => {
     try {
@@ -194,42 +314,122 @@ export default function RSVPMariage() {
   // ========== VUE ADMIN ==========
   if (view === 'admin') {
     if (!isAdminAuth) {
+      const locked = isLockedOut();
+      const remainingSeconds = getRemainingLockout();
+      
       return (
         <div className="min-h-screen bg-gradient-to-b from-rose-50 to-amber-50 p-4 flex items-center justify-center">
           <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full">
-            <h2 className="text-2xl font-serif text-gray-800 mb-6 text-center">🔐 Administration</h2>
-            <input
-              type="password"
-              placeholder="Mot de passe"
-              value={adminPassword}
-              onChange={(e) => setAdminPassword(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && (adminPassword === 'mariage2025' ? setIsAdminAuth(true) : alert('Mot de passe incorrect'))}
-              className="w-full p-3 border border-gray-200 rounded-lg mb-4 text-center text-lg"
-            />
-            <div className="flex gap-3">
-              <button onClick={() => setView('form')} className="flex-1 p-3 border border-gray-300 rounded-lg hover:bg-gray-50">
-                ← Retour
-              </button>
-              <button
-                onClick={() => adminPassword === 'mariage2025' ? setIsAdminAuth(true) : alert('Mot de passe incorrect')}
-                className="flex-1 p-3 bg-rose-500 text-white rounded-lg hover:bg-rose-600"
-              >
-                Connexion
-              </button>
-            </div>
-            <p className="text-xs text-gray-400 mt-4 text-center">Mot de passe : mariage2025</p>
+            <h2 className="text-2xl font-serif text-gray-800 mb-2 text-center">🔐 Administration</h2>
+            <p className="text-sm text-gray-500 text-center mb-6">Accès sécurisé en 2 étapes</p>
+            
+            {locked ? (
+              <div className="text-center">
+                <div className="bg-red-50 border border-red-200 rounded-xl p-6 mb-4">
+                  <div className="text-4xl mb-3">⛔</div>
+                  <p className="text-red-600 font-medium mb-2">Accès temporairement bloqué</p>
+                  <p className="text-red-500 text-sm">Trop de tentatives échouées</p>
+                  <p className="text-2xl font-mono text-red-600 mt-3">
+                    {Math.floor(remainingSeconds / 60)}:{String(remainingSeconds % 60).padStart(2, '0')}
+                  </p>
+                </div>
+                <button onClick={() => setView('form')} className="w-full p-3 border border-gray-300 rounded-lg hover:bg-gray-50">
+                  ← Retour au formulaire
+                </button>
+              </div>
+            ) : (
+              <>
+                {/* Indicateur d'étape */}
+                <div className="flex justify-center gap-2 mb-6">
+                  <div className={`w-3 h-3 rounded-full ${adminStep >= 1 ? 'bg-rose-500' : 'bg-gray-300'}`}></div>
+                  <div className={`w-3 h-3 rounded-full ${adminStep >= 2 ? 'bg-rose-500' : 'bg-gray-300'}`}></div>
+                </div>
+                
+                {adminStep === 1 ? (
+                  <>
+                    <label className="block text-sm font-medium text-gray-600 mb-2 text-center">
+                      Étape 1 : Code secret
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Entrez le code secret"
+                      value={adminCode}
+                      onChange={(e) => setAdminCode(e.target.value.toUpperCase())}
+                      onKeyPress={(e) => e.key === 'Enter' && handleCodeSubmit()}
+                      className="w-full p-3 border border-gray-200 rounded-lg mb-4 text-center text-lg uppercase tracking-widest"
+                      maxLength={20}
+                      autoComplete="off"
+                    />
+                  </>
+                ) : (
+                  <>
+                    <label className="block text-sm font-medium text-gray-600 mb-2 text-center">
+                      Étape 2 : Mot de passe
+                    </label>
+                    <input
+                      type="password"
+                      placeholder="Entrez le mot de passe"
+                      value={adminPassword}
+                      onChange={(e) => setAdminPassword(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && handlePasswordSubmit()}
+                      className="w-full p-3 border border-gray-200 rounded-lg mb-4 text-center text-lg"
+                      autoComplete="off"
+                    />
+                  </>
+                )}
+                
+                {loginAttempts > 0 && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4 text-center">
+                    <p className="text-amber-700 text-sm">
+                      ⚠️ Tentative {loginAttempts}/{ADMIN_CONFIG.maxAttempts}
+                    </p>
+                  </div>
+                )}
+                
+                <div className="flex gap-3">
+                  <button 
+                    onClick={() => { 
+                      if (adminStep === 2) {
+                        setAdminStep(1);
+                        setAdminPassword('');
+                      } else {
+                        setView('form');
+                      }
+                    }} 
+                    className="flex-1 p-3 border border-gray-300 rounded-lg hover:bg-gray-50"
+                  >
+                    ← {adminStep === 2 ? 'Retour' : 'Formulaire'}
+                  </button>
+                  <button
+                    onClick={adminStep === 1 ? handleCodeSubmit : handlePasswordSubmit}
+                    className="flex-1 p-3 bg-rose-500 text-white rounded-lg hover:bg-rose-600"
+                  >
+                    {adminStep === 1 ? 'Suivant →' : '🔓 Connexion'}
+                  </button>
+                </div>
+                
+                <p className="text-xs text-gray-400 mt-4 text-center">
+                  Session sécurisée • Expiration auto {ADMIN_CONFIG.sessionMinutes} min
+                </p>
+              </>
+            )}
           </div>
         </div>
       );
     }
 
     return (
-      <div className="min-h-screen bg-gradient-to-b from-rose-50 to-amber-50 p-4">
+      <div className="min-h-screen bg-gradient-to-b from-rose-50 to-amber-50 p-4" onClick={resetSessionTimer}>
         <div className="max-w-6xl mx-auto">
           {/* Header */}
           <div className="bg-white rounded-2xl shadow-xl p-6 mb-6">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-              <h1 className="text-2xl font-serif text-gray-800">📋 Tableau de bord RSVP</h1>
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
+              <div>
+                <h1 className="text-2xl font-serif text-gray-800">📋 Tableau de bord RSVP</h1>
+                <p className="text-xs text-gray-400 mt-1">
+                  🔒 Session sécurisée • Expire dans {sessionExpiry ? Math.max(0, Math.ceil((sessionExpiry - new Date()) / 60000)) : 0} min
+                </p>
+              </div>
               <div className="flex flex-wrap gap-2">
                 <button onClick={exportCSV} className="px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 text-sm">
                   📥 Export Excel
@@ -237,8 +437,11 @@ export default function RSVPMariage() {
                 <button onClick={clearAll} className="px-4 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 text-sm">
                   🗑️ Tout effacer
                 </button>
-                <button onClick={() => { setView('form'); setIsAdminAuth(false); }} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm">
+                <button onClick={() => { setView('form'); }} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm">
                   👁️ Voir formulaire
+                </button>
+                <button onClick={handleLogout} className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900 text-sm">
+                  🚪 Déconnexion
                 </button>
               </div>
             </div>
