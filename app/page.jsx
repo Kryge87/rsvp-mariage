@@ -9,6 +9,7 @@ export default function RSVPMariage() {
   const [responses, setResponses] = useState([]);
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [editingResponse, setEditingResponse] = useState(null);
   const [formData, setFormData] = useState({
     prenom: '',
     nom: '',
@@ -53,6 +54,45 @@ export default function RSVPMariage() {
     const updatedResponses = responses.filter(r => r.id !== id);
     localStorage.setItem('rsvp-mariage-responses', JSON.stringify(updatedResponses));
     setResponses(updatedResponses);
+  };
+
+  const startEdit = (response) => {
+    setEditingResponse({ ...response, accompagnants: response.accompagnants || [] });
+  };
+
+  const cancelEdit = () => {
+    setEditingResponse(null);
+  };
+
+  const saveEdit = () => {
+    const updatedResponses = responses.map(r => 
+      r.id === editingResponse.id ? editingResponse : r
+    );
+    localStorage.setItem('rsvp-mariage-responses', JSON.stringify(updatedResponses));
+    setResponses(updatedResponses);
+    setEditingResponse(null);
+  };
+
+  const updateEditField = (field, value) => {
+    setEditingResponse({ ...editingResponse, [field]: value });
+  };
+
+  const updateEditAccompagnant = (index, field, value) => {
+    const newAccompagnants = [...editingResponse.accompagnants];
+    newAccompagnants[index] = { ...newAccompagnants[index], [field]: value };
+    setEditingResponse({ ...editingResponse, accompagnants: newAccompagnants });
+  };
+
+  const addEditAccompagnant = () => {
+    setEditingResponse({
+      ...editingResponse,
+      accompagnants: [...editingResponse.accompagnants, { prenom: '', nom: '', type: 'adulte', preference: '', allergies: '' }]
+    });
+  };
+
+  const removeEditAccompagnant = (index) => {
+    const newAccompagnants = editingResponse.accompagnants.filter((_, i) => i !== index);
+    setEditingResponse({ ...editingResponse, accompagnants: newAccompagnants });
   };
 
   const clearAll = () => {
@@ -292,7 +332,10 @@ export default function RSVPMariage() {
                           ) : '-'}
                         </td>
                         <td className="px-4 py-3 text-center">
-                          <button onClick={() => deleteResponse(r.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg">🗑️</button>
+                          <div className="flex justify-center gap-1">
+                            <button onClick={() => startEdit(r)} className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg" title="Modifier">✏️</button>
+                            <button onClick={() => deleteResponse(r.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg" title="Supprimer">🗑️</button>
+                          </div>
                         </td>
                       </tr>
                     ))
@@ -301,6 +344,184 @@ export default function RSVPMariage() {
               </table>
             </div>
           </div>
+
+          {/* Modal d'édition */}
+          {editingResponse && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+              <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                <div className="p-6 border-b border-gray-100">
+                  <div className="flex justify-between items-center">
+                    <h2 className="text-xl font-serif text-gray-800">✏️ Modifier la réponse</h2>
+                    <button onClick={cancelEdit} className="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+                  </div>
+                </div>
+                
+                <div className="p-6 space-y-4">
+                  {/* Infos personnelles */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-600 mb-1">Prénom *</label>
+                      <input type="text" value={editingResponse.prenom}
+                        onChange={(e) => updateEditField('prenom', e.target.value)}
+                        className="w-full p-3 border border-gray-200 rounded-lg" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-600 mb-1">Nom *</label>
+                      <input type="text" value={editingResponse.nom}
+                        onChange={(e) => updateEditField('nom', e.target.value)}
+                        className="w-full p-3 border border-gray-200 rounded-lg" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-600 mb-1">Email <span className="text-red-500">*</span></label>
+                    <input type="email" value={editingResponse.email || ''}
+                      onChange={(e) => updateEditField('email', e.target.value)}
+                      className={`w-full p-3 border rounded-lg ${!editingResponse.email ? 'border-red-300 bg-red-50' : 'border-gray-200'}`} />
+                  </div>
+
+                  {/* Type */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-600 mb-2">Type</label>
+                    <div className="flex gap-3">
+                      <button type="button"
+                        onClick={() => updateEditField('type', 'adulte')}
+                        className={`flex-1 p-3 rounded-xl border-2 transition ${editingResponse.type === 'adulte' ? 'border-blue-400 bg-blue-50' : 'border-gray-200'}`}>
+                        🧑 Adulte
+                      </button>
+                      <button type="button"
+                        onClick={() => updateEditField('type', 'enfant')}
+                        className={`flex-1 p-3 rounded-xl border-2 transition ${editingResponse.type === 'enfant' ? 'border-purple-400 bg-purple-50' : 'border-gray-200'}`}>
+                        👶 Enfant
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Présence */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-600 mb-2">Cérémonie</label>
+                      <div className="flex gap-2">
+                        <button type="button"
+                          onClick={() => updateEditField('ceremonie', true)}
+                          className={`flex-1 p-2 rounded-lg border-2 ${editingResponse.ceremonie === true ? 'border-green-400 bg-green-50' : 'border-gray-200'}`}>
+                          ✓ Oui
+                        </button>
+                        <button type="button"
+                          onClick={() => updateEditField('ceremonie', false)}
+                          className={`flex-1 p-2 rounded-lg border-2 ${editingResponse.ceremonie === false ? 'border-red-400 bg-red-50' : 'border-gray-200'}`}>
+                          ✗ Non
+                        </button>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-600 mb-2">Soirée</label>
+                      <div className="flex gap-2">
+                        <button type="button"
+                          onClick={() => updateEditField('soiree', true)}
+                          className={`flex-1 p-2 rounded-lg border-2 ${editingResponse.soiree === true ? 'border-green-400 bg-green-50' : 'border-gray-200'}`}>
+                          ✓ Oui
+                        </button>
+                        <button type="button"
+                          onClick={() => updateEditField('soiree', false)}
+                          className={`flex-1 p-2 rounded-lg border-2 ${editingResponse.soiree === false ? 'border-red-400 bg-red-50' : 'border-gray-200'}`}>
+                          ✗ Non
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Menu */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-600 mb-2">Préférence culinaire</label>
+                    <div className="grid grid-cols-3 gap-3">
+                      <button type="button"
+                        onClick={() => updateEditField('preference', 'classique')}
+                        className={`p-3 rounded-xl border-2 transition text-center ${editingResponse.preference === 'classique' ? 'border-amber-400 bg-amber-50' : 'border-gray-200'}`}>
+                        🍽️ Classique
+                      </button>
+                      <button type="button"
+                        onClick={() => updateEditField('preference', 'vegetarien')}
+                        className={`p-3 rounded-xl border-2 transition text-center ${editingResponse.preference === 'vegetarien' ? 'border-emerald-400 bg-emerald-50' : 'border-gray-200'}`}>
+                        🥬 Végétarien
+                      </button>
+                      <button type="button"
+                        onClick={() => updateEditField('preference', 'sans-porc')}
+                        className={`p-3 rounded-xl border-2 transition text-center ${editingResponse.preference === 'sans-porc' ? 'border-orange-400 bg-orange-50' : 'border-gray-200'}`}>
+                        🚫🐷 Sans porc
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Allergies */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-600 mb-1">Allergies</label>
+                    <input type="text" value={editingResponse.allergies || ''}
+                      onChange={(e) => updateEditField('allergies', e.target.value)}
+                      className="w-full p-3 border border-gray-200 rounded-lg" />
+                  </div>
+
+                  {/* Accompagnants */}
+                  <div>
+                    <div className="flex justify-between items-center mb-3">
+                      <label className="text-sm font-medium text-gray-600">Accompagnants ({editingResponse.accompagnants?.length || 0})</label>
+                      <button type="button" onClick={addEditAccompagnant}
+                        className="px-3 py-1 bg-rose-100 text-rose-600 rounded-lg text-sm hover:bg-rose-200">
+                        + Ajouter
+                      </button>
+                    </div>
+                    {editingResponse.accompagnants?.map((acc, index) => (
+                      <div key={index} className="bg-gray-50 rounded-xl p-4 mb-3">
+                        <div className="flex justify-between items-center mb-3">
+                          <span className="font-medium text-gray-700">Accompagnant {index + 1}</span>
+                          <button type="button" onClick={() => removeEditAccompagnant(index)}
+                            className="text-red-500 hover:text-red-700 text-sm">Supprimer</button>
+                        </div>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                          <input type="text" placeholder="Prénom *" value={acc.prenom}
+                            onChange={(e) => updateEditAccompagnant(index, 'prenom', e.target.value)}
+                            className="p-2 border border-gray-200 rounded-lg" />
+                          <input type="text" placeholder="Nom *" value={acc.nom || ''}
+                            onChange={(e) => updateEditAccompagnant(index, 'nom', e.target.value)}
+                            className="p-2 border border-gray-200 rounded-lg" />
+                          <select value={acc.type}
+                            onChange={(e) => updateEditAccompagnant(index, 'type', e.target.value)}
+                            className="p-2 border border-gray-200 rounded-lg bg-white">
+                            <option value="adulte">🧑 Adulte</option>
+                            <option value="enfant">👶 Enfant</option>
+                          </select>
+                          <select value={acc.preference}
+                            onChange={(e) => updateEditAccompagnant(index, 'preference', e.target.value)}
+                            className="p-2 border border-gray-200 rounded-lg bg-white">
+                            <option value="">Menu...</option>
+                            <option value="classique">🍽️ Classique</option>
+                            <option value="vegetarien">🥬 Végétarien</option>
+                            <option value="sans-porc">🚫🐷 Sans porc</option>
+                          </select>
+                        </div>
+                        <input type="text" placeholder="Allergies (optionnel)" value={acc.allergies || ''}
+                          onChange={(e) => updateEditAccompagnant(index, 'allergies', e.target.value)}
+                          className="w-full p-2 border border-gray-200 rounded-lg mt-3" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Boutons */}
+                <div className="p-6 border-t border-gray-100 flex gap-3">
+                  <button onClick={cancelEdit}
+                    className="flex-1 p-3 border border-gray-300 rounded-lg hover:bg-gray-50">
+                    Annuler
+                  </button>
+                  <button onClick={saveEdit}
+                    disabled={!editingResponse.prenom || !editingResponse.nom || !editingResponse.email}
+                    className="flex-1 p-3 bg-rose-500 text-white rounded-lg hover:bg-rose-600 disabled:opacity-50">
+                    💾 Sauvegarder
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -376,12 +597,12 @@ export default function RSVPMariage() {
               </div>
             </div>
             <div className="mb-4">
-              <label className="block text-sm text-gray-600 mb-1">Email (optionnel)</label>
+              <label className="block text-sm text-gray-600 mb-1">Email <span className="text-red-500">*</span></label>
               <input
                 type="email" value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-rose-200 focus:border-rose-400 outline-none"
-                placeholder="Pour recevoir un rappel"
+                className={`w-full p-3 border rounded-xl focus:ring-2 focus:ring-rose-200 focus:border-rose-400 outline-none ${!formData.email ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}
+                placeholder="votre@email.com"
               />
             </div>
             
@@ -550,7 +771,7 @@ export default function RSVPMariage() {
 
           {/* Submit */}
           <button type="submit"
-            disabled={loading || !formData.prenom || !formData.nom || !formData.type || formData.ceremonie === null || formData.soiree === null || (formData.soiree && !formData.preference) || formData.accompagnants.some(a => !a.prenom || !a.nom)}
+            disabled={loading || !formData.prenom || !formData.nom || !formData.email || !formData.type || formData.ceremonie === null || formData.soiree === null || (formData.soiree && !formData.preference) || formData.accompagnants.some(a => !a.prenom || !a.nom)}
             className="w-full p-4 bg-gradient-to-r from-rose-500 to-rose-400 text-white rounded-xl font-medium hover:from-rose-600 hover:to-rose-500 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-lg">
             {loading ? (
               <><span className="animate-spin">⏳</span> Envoi...</>
