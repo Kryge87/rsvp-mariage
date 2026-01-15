@@ -1,6 +1,13 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { createClient } from '@supabase/supabase-js';
+
+// ⚠️ CONFIGURATION SUPABASE
+const supabase = createClient(
+  'https://qenjqlkuucdtpsgycmca.supabase.co',
+  'sb_publishable_rBVmIn3PcOE6N-lvxSQqLQ_1eB-5tL-'
+);
 
 // ⚠️ CONFIGURATION ADMIN
 const ADMIN_CONFIG = {
@@ -155,33 +162,58 @@ export default function RSVPMariage() {
     }
   };
 
-  const loadResponses = () => {
+  const loadResponses = async () => {
     try {
-      const saved = localStorage.getItem('rsvp-mariage-responses');
-      if (saved) {
-        setResponses(JSON.parse(saved));
-      }
+      const { data, error } = await supabase
+        .from('rsvp_responses')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      setResponses(data || []);
     } catch (e) {
-      console.log('Pas encore de réponses');
+      console.error('Erreur chargement:', e);
     }
   };
 
-  const saveResponse = (newResponse) => {
+  const saveResponse = async (newResponse) => {
     try {
-      const updatedResponses = [...responses, { ...newResponse, id: Date.now(), date: new Date().toISOString() }];
-      localStorage.setItem('rsvp-mariage-responses', JSON.stringify(updatedResponses));
-      setResponses(updatedResponses);
+      const { data, error } = await supabase
+        .from('rsvp_responses')
+        .insert([{
+          prenom: newResponse.prenom,
+          nom: newResponse.nom,
+          email: newResponse.email,
+          telephone: newResponse.telephone,
+          type: newResponse.type,
+          ceremonie: newResponse.ceremonie,
+          soiree: newResponse.soiree,
+          allergies: newResponse.allergies,
+          accompagnants: newResponse.accompagnants
+        }])
+        .select();
+      
+      if (error) throw error;
+      await loadResponses();
       return true;
     } catch (e) {
-      console.error('Erreur:', e);
+      console.error('Erreur sauvegarde:', e);
       return false;
     }
   };
 
-  const deleteResponse = (id) => {
-    const updatedResponses = responses.filter(r => r.id !== id);
-    localStorage.setItem('rsvp-mariage-responses', JSON.stringify(updatedResponses));
-    setResponses(updatedResponses);
+  const deleteResponse = async (id) => {
+    try {
+      const { error } = await supabase
+        .from('rsvp_responses')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+      await loadResponses();
+    } catch (e) {
+      console.error('Erreur suppression:', e);
+    }
   };
 
   const startEdit = (response) => {
@@ -192,13 +224,29 @@ export default function RSVPMariage() {
     setEditingResponse(null);
   };
 
-  const saveEdit = () => {
-    const updatedResponses = responses.map(r => 
-      r.id === editingResponse.id ? editingResponse : r
-    );
-    localStorage.setItem('rsvp-mariage-responses', JSON.stringify(updatedResponses));
-    setResponses(updatedResponses);
-    setEditingResponse(null);
+  const saveEdit = async () => {
+    try {
+      const { error } = await supabase
+        .from('rsvp_responses')
+        .update({
+          prenom: editingResponse.prenom,
+          nom: editingResponse.nom,
+          email: editingResponse.email,
+          telephone: editingResponse.telephone,
+          type: editingResponse.type,
+          ceremonie: editingResponse.ceremonie,
+          soiree: editingResponse.soiree,
+          allergies: editingResponse.allergies,
+          accompagnants: editingResponse.accompagnants
+        })
+        .eq('id', editingResponse.id);
+      
+      if (error) throw error;
+      await loadResponses();
+      setEditingResponse(null);
+    } catch (e) {
+      console.error('Erreur modification:', e);
+    }
   };
 
   const updateEditField = (field, value) => {
@@ -223,21 +271,30 @@ export default function RSVPMariage() {
     setEditingResponse({ ...editingResponse, accompagnants: newAccompagnants });
   };
 
-  const clearAll = () => {
+  const clearAll = async () => {
     if (confirm('Supprimer toutes les réponses ?')) {
-      localStorage.removeItem('rsvp-mariage-responses');
-      setResponses([]);
+      try {
+        const { error } = await supabase
+          .from('rsvp_responses')
+          .delete()
+          .neq('id', 0); // Supprime tout
+        
+        if (error) throw error;
+        setResponses([]);
+      } catch (e) {
+        console.error('Erreur suppression:', e);
+      }
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => {
-      saveResponse(formData);
+    const success = await saveResponse(formData);
+    if (success) {
       setSubmitted(true);
-      setLoading(false);
-    }, 500);
+    }
+    setLoading(false);
   };
 
   const handleAccompagnantChange = (index, field, value) => {
@@ -260,7 +317,7 @@ export default function RSVPMariage() {
     
     responses.forEach(r => {
       rows.push([
-        new Date(r.date).toLocaleDateString('fr-FR'),
+        new Date(r.created_at).toLocaleDateString('fr-FR'),
         r.prenom,
         r.nom,
         r.email || '',
@@ -275,7 +332,7 @@ export default function RSVPMariage() {
       
       r.accompagnants?.forEach(a => {
         rows.push([
-          new Date(r.date).toLocaleDateString('fr-FR'),
+          new Date(r.created_at).toLocaleDateString('fr-FR'),
           a.prenom,
           a.nom || '',
           '',
@@ -501,7 +558,7 @@ export default function RSVPMariage() {
                   ) : (
                     responses.map((r) => (
                       <tr key={r.id} className="hover:bg-gray-50">
-                        <td className="px-4 py-3 text-gray-500">{new Date(r.date).toLocaleDateString('fr-FR')}</td>
+                        <td className="px-4 py-3 text-gray-500">{new Date(r.created_at).toLocaleDateString('fr-FR')}</td>
                         <td className="px-4 py-3">
                           <div className="font-medium text-gray-800">{r.prenom} {r.nom}</div>
                           {r.email && <div className="text-xs text-gray-400">{r.email}</div>}
