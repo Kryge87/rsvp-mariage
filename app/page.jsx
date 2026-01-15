@@ -37,18 +37,17 @@ export default function RSVPMariage() {
     prenom: '',
     nom: '',
     email: '',
-    type: 'adulte', // adulte par défaut
+    telephone: '',
+    type: 'adulte',
     ceremonie: null,
     soiree: null,
     nbAccompagnants: 0,
     accompagnants: [],
-    allergies: '',
-    preference: ''
+    allergies: ''
   });
 
   useEffect(() => {
     loadResponses();
-    // Vérifier le lockout au chargement
     const savedLockout = localStorage.getItem('admin-lockout');
     if (savedLockout) {
       const lockoutTime = new Date(savedLockout);
@@ -58,7 +57,6 @@ export default function RSVPMariage() {
         localStorage.removeItem('admin-lockout');
       }
     }
-    // Vérifier la session
     const savedSession = localStorage.getItem('admin-session');
     if (savedSession) {
       const sessionTime = new Date(savedSession);
@@ -71,7 +69,6 @@ export default function RSVPMariage() {
     }
   }, []);
 
-  // Vérifier l'expiration de session
   useEffect(() => {
     if (sessionExpiry && isAdminAuth) {
       const checkSession = setInterval(() => {
@@ -83,7 +80,6 @@ export default function RSVPMariage() {
     }
   }, [sessionExpiry, isAdminAuth]);
 
-  // Réinitialiser l'activité (prolonger la session)
   const resetSessionTimer = () => {
     if (isAdminAuth) {
       const newExpiry = new Date(Date.now() + ADMIN_CONFIG.sessionMinutes * 60 * 1000);
@@ -218,7 +214,7 @@ export default function RSVPMariage() {
   const addEditAccompagnant = () => {
     setEditingResponse({
       ...editingResponse,
-      accompagnants: [...editingResponse.accompagnants, { prenom: '', nom: '', type: 'adulte', preference: '', allergies: '' }]
+      accompagnants: [...editingResponse.accompagnants, { prenom: '', nom: '', type: 'adulte', allergies: '' }]
     });
   };
 
@@ -253,45 +249,43 @@ export default function RSVPMariage() {
   const handleNbAccompagnantsChange = (nb) => {
     const newNb = Math.max(0, Math.min(10, nb));
     const newAccompagnants = Array(newNb).fill(null).map((_, i) => 
-      formData.accompagnants[i] || { prenom: '', nom: '', type: 'adulte', preference: '', allergies: '' }
+      formData.accompagnants[i] || { prenom: '', nom: '', type: 'adulte', allergies: '' }
     );
     setFormData({ ...formData, nbAccompagnants: newNb, accompagnants: newAccompagnants });
   };
 
   const exportCSV = () => {
-    const headers = ['Date', 'Prénom', 'Nom', 'Email', 'Type', 'Cérémonie', 'Soirée', 'Menu', 'Allergies', 'Rôle', 'Invité principal'];
+    const headers = ['Date', 'Prénom', 'Nom', 'Email', 'Téléphone', 'Type', 'Cérémonie', 'Soirée', 'Allergies', 'Rôle', 'Invité principal'];
     const rows = [];
     
     responses.forEach(r => {
-      // Ligne pour l'invité principal
       rows.push([
         new Date(r.date).toLocaleDateString('fr-FR'),
         r.prenom,
         r.nom,
         r.email || '',
+        r.telephone || '',
         r.type === 'enfant' ? 'Enfant' : 'Adulte',
         r.ceremonie ? 'Oui' : 'Non',
         r.soiree ? 'Oui' : 'Non',
-        r.preference || '',
         r.allergies || '',
         'Invité principal',
         `${r.prenom} ${r.nom}`
       ]);
       
-      // Ligne pour chaque accompagnant
       r.accompagnants?.forEach(a => {
         rows.push([
           new Date(r.date).toLocaleDateString('fr-FR'),
           a.prenom,
           a.nom || '',
-          '', // pas d'email pour les accompagnants
+          '',
+          '',
           a.type === 'enfant' ? 'Enfant' : 'Adulte',
-          r.ceremonie ? 'Oui' : 'Non', // même présence que l'invité principal
+          r.ceremonie ? 'Oui' : 'Non',
           r.soiree ? 'Oui' : 'Non',
-          a.preference || '',
           a.allergies || '',
           'Accompagnant',
-          `${r.prenom} ${r.nom}` // référence à l'invité principal
+          `${r.prenom} ${r.nom}`
         ]);
       });
     });
@@ -305,7 +299,6 @@ export default function RSVPMariage() {
     a.click();
   };
 
-  // Calcul des stats
   const stats = {
     total: responses.length,
     adultes: responses.filter(r => r.type === 'adulte').length + 
@@ -314,13 +307,7 @@ export default function RSVPMariage() {
              responses.reduce((acc, r) => acc + (r.accompagnants?.filter(a => a.type === 'enfant').length || 0), 0),
     ceremonie: responses.filter(r => r.ceremonie).length,
     soiree: responses.filter(r => r.soiree).length,
-    totalPersonnes: responses.reduce((acc, r) => acc + 1 + (r.accompagnants?.length || 0), 0),
-    vegetarien: responses.filter(r => r.preference === 'vegetarien').length + 
-                responses.reduce((acc, r) => acc + (r.accompagnants?.filter(a => a.preference === 'vegetarien').length || 0), 0),
-    sansPorc: responses.filter(r => r.preference === 'sans-porc').length +
-              responses.reduce((acc, r) => acc + (r.accompagnants?.filter(a => a.preference === 'sans-porc').length || 0), 0),
-    classique: responses.filter(r => r.preference === 'classique').length +
-               responses.reduce((acc, r) => acc + (r.accompagnants?.filter(a => a.preference === 'classique').length || 0), 0)
+    totalPersonnes: responses.reduce((acc, r) => acc + 1 + (r.accompagnants?.length || 0), 0)
   };
 
   // ========== VUE ADMIN ==========
@@ -351,7 +338,6 @@ export default function RSVPMariage() {
               </div>
             ) : (
               <>
-                {/* Indicateur d'étape */}
                 <div className="flex justify-center gap-2 mb-6">
                   <div className={`w-3 h-3 rounded-full ${adminStep >= 1 ? 'bg-rose-500' : 'bg-gray-300'}`}></div>
                   <div className={`w-3 h-3 rounded-full ${adminStep >= 2 ? 'bg-rose-500' : 'bg-gray-300'}`}></div>
@@ -459,7 +445,7 @@ export default function RSVPMariage() {
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
               <div className="bg-rose-50 rounded-xl p-3 text-center">
                 <div className="text-2xl">📝</div>
                 <div className="text-2xl font-bold text-gray-800">{stats.total}</div>
@@ -490,16 +476,6 @@ export default function RSVPMariage() {
                 <div className="text-2xl font-bold text-gray-800">{stats.soiree}</div>
                 <div className="text-xs text-gray-600">Soirée</div>
               </div>
-              <div className="bg-green-50 rounded-xl p-3 text-center">
-                <div className="text-2xl">🥬</div>
-                <div className="text-2xl font-bold text-gray-800">{stats.vegetarien}</div>
-                <div className="text-xs text-gray-600">Végétarien</div>
-              </div>
-              <div className="bg-orange-50 rounded-xl p-3 text-center">
-                <div className="text-2xl">🚫</div>
-                <div className="text-2xl font-bold text-gray-800">{stats.sansPorc}</div>
-                <div className="text-xs text-gray-600">Sans porc</div>
-              </div>
             </div>
           </div>
 
@@ -514,7 +490,6 @@ export default function RSVPMariage() {
                     <th className="px-4 py-3 font-medium text-gray-600">Type</th>
                     <th className="px-4 py-3 font-medium text-gray-600 text-center">Cérémonie</th>
                     <th className="px-4 py-3 font-medium text-gray-600 text-center">Soirée</th>
-                    <th className="px-4 py-3 font-medium text-gray-600">Menu</th>
                     <th className="px-4 py-3 font-medium text-gray-600">Allergies</th>
                     <th className="px-4 py-3 font-medium text-gray-600">Accompagnants</th>
                     <th className="px-4 py-3 font-medium text-gray-600 text-center">Action</th>
@@ -522,7 +497,7 @@ export default function RSVPMariage() {
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {responses.length === 0 ? (
-                    <tr><td colSpan="9" className="px-4 py-8 text-center text-gray-400">Aucune réponse pour le moment</td></tr>
+                    <tr><td colSpan="8" className="px-4 py-8 text-center text-gray-400">Aucune réponse pour le moment</td></tr>
                   ) : (
                     responses.map((r) => (
                       <tr key={r.id} className="hover:bg-gray-50">
@@ -530,6 +505,7 @@ export default function RSVPMariage() {
                         <td className="px-4 py-3">
                           <div className="font-medium text-gray-800">{r.prenom} {r.nom}</div>
                           {r.email && <div className="text-xs text-gray-400">{r.email}</div>}
+                          {r.telephone && <div className="text-xs text-gray-400">{r.telephone}</div>}
                         </td>
                         <td className="px-4 py-3">
                           <span className={`px-2 py-1 rounded-full text-xs ${r.type === 'enfant' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
@@ -546,24 +522,13 @@ export default function RSVPMariage() {
                             {r.soiree ? '✓ Oui' : '✗ Non'}
                           </span>
                         </td>
-                        <td className="px-4 py-3">
-                          {r.preference && (
-                            <span className={`px-2 py-1 rounded-full text-xs ${
-                              r.preference === 'vegetarien' ? 'bg-emerald-100 text-emerald-700' :
-                              r.preference === 'sans-porc' ? 'bg-orange-100 text-orange-700' :
-                              'bg-gray-100 text-gray-700'
-                            }`}>
-                              {r.preference === 'vegetarien' ? '🥬 Végé' : r.preference === 'sans-porc' ? '🚫🐷' : '🍽️ Classique'}
-                            </span>
-                          )}
-                        </td>
                         <td className="px-4 py-3 text-gray-600 max-w-[150px] truncate">{r.allergies || '-'}</td>
                         <td className="px-4 py-3">
                           {r.accompagnants?.length > 0 ? (
                             <div className="space-y-1">
                               {r.accompagnants.map((a, i) => (
                                 <div key={i} className="text-xs bg-gray-100 rounded px-2 py-1">
-                                  {a.prenom} {a.nom || ''} {a.type === 'enfant' ? '👶' : '🧑'} • {a.preference === 'vegetarien' ? '🥬' : a.preference === 'sans-porc' ? '🚫🐷' : '🍽️'}
+                                  {a.prenom} {a.nom || ''} {a.type === 'enfant' ? '👶' : '🧑'}
                                 </div>
                               ))}
                             </div>
@@ -595,7 +560,6 @@ export default function RSVPMariage() {
                 </div>
                 
                 <div className="p-6 space-y-4">
-                  {/* Infos personnelles */}
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-600 mb-1">Prénom *</label>
@@ -618,7 +582,13 @@ export default function RSVPMariage() {
                       className={`w-full p-3 border rounded-lg ${!editingResponse.email ? 'border-red-300 bg-red-50' : 'border-gray-200'}`} />
                   </div>
 
-                  {/* Type */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-600 mb-1">Téléphone <span className="text-red-500">*</span></label>
+                    <input type="tel" value={editingResponse.telephone || ''}
+                      onChange={(e) => updateEditField('telephone', e.target.value)}
+                      className={`w-full p-3 border rounded-lg ${!editingResponse.telephone ? 'border-red-300 bg-red-50' : 'border-gray-200'}`} />
+                  </div>
+
                   <div>
                     <label className="block text-sm font-medium text-gray-600 mb-2">Type</label>
                     <div className="flex gap-3">
@@ -635,7 +605,6 @@ export default function RSVPMariage() {
                     </div>
                   </div>
 
-                  {/* Présence */}
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-600 mb-2">Cérémonie</label>
@@ -669,29 +638,6 @@ export default function RSVPMariage() {
                     </div>
                   </div>
 
-                  {/* Menu */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-600 mb-2">Préférence culinaire</label>
-                    <div className="grid grid-cols-3 gap-3">
-                      <button type="button"
-                        onClick={() => updateEditField('preference', 'classique')}
-                        className={`p-3 rounded-xl border-2 transition text-center ${editingResponse.preference === 'classique' ? 'border-amber-400 bg-amber-50' : 'border-gray-200'}`}>
-                        🍽️ Classique
-                      </button>
-                      <button type="button"
-                        onClick={() => updateEditField('preference', 'vegetarien')}
-                        className={`p-3 rounded-xl border-2 transition text-center ${editingResponse.preference === 'vegetarien' ? 'border-emerald-400 bg-emerald-50' : 'border-gray-200'}`}>
-                        🥬 Végétarien
-                      </button>
-                      <button type="button"
-                        onClick={() => updateEditField('preference', 'sans-porc')}
-                        className={`p-3 rounded-xl border-2 transition text-center ${editingResponse.preference === 'sans-porc' ? 'border-orange-400 bg-orange-50' : 'border-gray-200'}`}>
-                        🚫🐷 Sans porc
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Allergies */}
                   <div>
                     <label className="block text-sm font-medium text-gray-600 mb-1">Allergies</label>
                     <input type="text" value={editingResponse.allergies || ''}
@@ -699,7 +645,6 @@ export default function RSVPMariage() {
                       className="w-full p-3 border border-gray-200 rounded-lg" />
                   </div>
 
-                  {/* Accompagnants */}
                   <div>
                     <div className="flex justify-between items-center mb-3">
                       <label className="text-sm font-medium text-gray-600">Accompagnants ({editingResponse.accompagnants?.length || 0})</label>
@@ -715,7 +660,7 @@ export default function RSVPMariage() {
                           <button type="button" onClick={() => removeEditAccompagnant(index)}
                             className="text-red-500 hover:text-red-700 text-sm">Supprimer</button>
                         </div>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div className="grid grid-cols-3 gap-3">
                           <input type="text" placeholder="Prénom *" value={acc.prenom}
                             onChange={(e) => updateEditAccompagnant(index, 'prenom', e.target.value)}
                             className="p-2 border border-gray-200 rounded-lg" />
@@ -728,14 +673,6 @@ export default function RSVPMariage() {
                             <option value="adulte">🧑 Adulte</option>
                             <option value="enfant">👶 Enfant</option>
                           </select>
-                          <select value={acc.preference}
-                            onChange={(e) => updateEditAccompagnant(index, 'preference', e.target.value)}
-                            className="p-2 border border-gray-200 rounded-lg bg-white">
-                            <option value="">Menu...</option>
-                            <option value="classique">🍽️ Classique</option>
-                            <option value="vegetarien">🥬 Végétarien</option>
-                            <option value="sans-porc">🚫🐷 Sans porc</option>
-                          </select>
                         </div>
                         <input type="text" placeholder="Allergies (optionnel)" value={acc.allergies || ''}
                           onChange={(e) => updateEditAccompagnant(index, 'allergies', e.target.value)}
@@ -745,14 +682,13 @@ export default function RSVPMariage() {
                   </div>
                 </div>
 
-                {/* Boutons */}
                 <div className="p-6 border-t border-gray-100 flex gap-3">
                   <button onClick={cancelEdit}
                     className="flex-1 p-3 border border-gray-300 rounded-lg hover:bg-gray-50">
                     Annuler
                   </button>
                   <button onClick={saveEdit}
-                    disabled={!editingResponse.prenom || !editingResponse.nom || !editingResponse.email}
+                    disabled={!editingResponse.prenom || !editingResponse.nom || !editingResponse.email || !editingResponse.telephone}
                     className="flex-1 p-3 bg-rose-500 text-white rounded-lg hover:bg-rose-600 disabled:opacity-50">
                     💾 Sauvegarder
                   </button>
@@ -783,8 +719,8 @@ export default function RSVPMariage() {
             onClick={() => {
               setSubmitted(false);
               setFormData({
-                prenom: '', nom: '', email: '', type: 'adulte', ceremonie: null, soiree: null,
-                nbAccompagnants: 0, accompagnants: [], allergies: '', preference: ''
+                prenom: '', nom: '', email: '', telephone: '', type: 'adulte', ceremonie: null, soiree: null,
+                nbAccompagnants: 0, accompagnants: [], allergies: ''
               });
             }}
             className="text-rose-600 hover:text-rose-700 text-sm underline"
@@ -816,20 +752,20 @@ export default function RSVPMariage() {
             </h2>
             <div className="grid md:grid-cols-2 gap-4 mb-4">
               <div>
-                <label className="block text-sm text-gray-600 mb-1">Prénom *</label>
+                <label className="block text-sm text-gray-600 mb-1">Prénom <span className="text-red-500">*</span></label>
                 <input
                   type="text" required value={formData.prenom}
                   onChange={(e) => setFormData({ ...formData, prenom: e.target.value })}
-                  className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-rose-200 focus:border-rose-400 outline-none"
+                  className={`w-full p-3 border rounded-xl focus:ring-2 focus:ring-rose-200 focus:border-rose-400 outline-none ${!formData.prenom ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}
                   placeholder="Votre prénom"
                 />
               </div>
               <div>
-                <label className="block text-sm text-gray-600 mb-1">Nom *</label>
+                <label className="block text-sm text-gray-600 mb-1">Nom <span className="text-red-500">*</span></label>
                 <input
                   type="text" required value={formData.nom}
                   onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
-                  className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-rose-200 focus:border-rose-400 outline-none"
+                  className={`w-full p-3 border rounded-xl focus:ring-2 focus:ring-rose-200 focus:border-rose-400 outline-none ${!formData.nom ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}
                   placeholder="Votre nom"
                 />
               </div>
@@ -841,6 +777,15 @@ export default function RSVPMariage() {
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 className={`w-full p-3 border rounded-xl focus:ring-2 focus:ring-rose-200 focus:border-rose-400 outline-none ${!formData.email ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}
                 placeholder="votre@email.com"
+              />
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm text-gray-600 mb-1">Téléphone <span className="text-red-500">*</span></label>
+              <input
+                type="tel" value={formData.telephone}
+                onChange={(e) => setFormData({ ...formData, telephone: e.target.value })}
+                className={`w-full p-3 border rounded-xl focus:ring-2 focus:ring-rose-200 focus:border-rose-400 outline-none ${!formData.telephone ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}
+                placeholder="0696 12 34 56"
               />
             </div>
           </div>
@@ -889,55 +834,22 @@ export default function RSVPMariage() {
                   <div className="font-medium">Non</div>
                 </button>
               </div>
+
+              {/* Allergies - uniquement si soirée */}
+              {formData.soiree && (
+                <div className="mt-4">
+                  <label className="block text-sm text-gray-600 mb-1">⚠️ Allergies alimentaires</label>
+                  <textarea
+                    value={formData.allergies}
+                    onChange={(e) => setFormData({ ...formData, allergies: e.target.value })}
+                    className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-rose-200 focus:border-rose-400 outline-none bg-white"
+                    placeholder="Gluten, lactose, fruits à coque..."
+                    rows={2}
+                  />
+                </div>
+              )}
             </div>
           </div>
-
-          {/* Menu (si soirée) */}
-          {formData.soiree && (
-            <div>
-              <h2 className="text-lg font-medium text-gray-800 mb-4 flex items-center gap-2">
-                <span>🍽️</span> Préférences culinaires
-              </h2>
-              
-              <div className="grid grid-cols-3 gap-3 mb-4">
-                <button type="button"
-                  onClick={() => setFormData({ ...formData, preference: 'classique' })}
-                  className={`p-4 rounded-xl border-2 transition text-center ${
-                    formData.preference === 'classique' ? 'border-amber-400 bg-amber-50' : 'border-gray-200 hover:border-gray-300'
-                  }`}>
-                  <div className="text-2xl mb-1">🍽️</div>
-                  <div className="text-sm font-medium">Classique</div>
-                </button>
-                <button type="button"
-                  onClick={() => setFormData({ ...formData, preference: 'vegetarien' })}
-                  className={`p-4 rounded-xl border-2 transition text-center ${
-                    formData.preference === 'vegetarien' ? 'border-emerald-400 bg-emerald-50' : 'border-gray-200 hover:border-gray-300'
-                  }`}>
-                  <div className="text-2xl mb-1">🥬</div>
-                  <div className="text-sm font-medium">Végétarien</div>
-                </button>
-                <button type="button"
-                  onClick={() => setFormData({ ...formData, preference: 'sans-porc' })}
-                  className={`p-4 rounded-xl border-2 transition text-center ${
-                    formData.preference === 'sans-porc' ? 'border-orange-400 bg-orange-50' : 'border-gray-200 hover:border-gray-300'
-                  }`}>
-                  <div className="text-2xl mb-1">🚫🐷</div>
-                  <div className="text-sm font-medium">Sans porc</div>
-                </button>
-              </div>
-
-              <div>
-                <label className="block text-sm text-gray-600 mb-1">⚠️ Allergies alimentaires</label>
-                <textarea
-                  value={formData.allergies}
-                  onChange={(e) => setFormData({ ...formData, allergies: e.target.value })}
-                  className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-rose-200 focus:border-rose-400 outline-none"
-                  placeholder="Gluten, lactose, fruits à coque..."
-                  rows={2}
-                />
-              </div>
-            </div>
-          )}
 
           {/* Accompagnants */}
           {(formData.ceremonie || formData.soiree) && (
@@ -960,7 +872,7 @@ export default function RSVPMariage() {
               {formData.accompagnants.map((acc, index) => (
                 <div key={index} className="bg-gray-50 rounded-xl p-4 mb-3">
                   <div className="font-medium text-gray-700 mb-3">Accompagnant {index + 1} <span className="text-red-500">*</span></div>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <div className="grid grid-cols-3 gap-3">
                     <input type="text" placeholder="Prénom *" value={acc.prenom}
                       onChange={(e) => handleAccompagnantChange(index, 'prenom', e.target.value)}
                       className={`p-2 border rounded-lg ${!acc.prenom ? 'border-red-300 bg-red-50' : 'border-gray-200'}`} />
@@ -971,13 +883,6 @@ export default function RSVPMariage() {
                       className="p-2 border border-gray-200 rounded-lg bg-white">
                       <option value="adulte">🧑 Adulte</option>
                       <option value="enfant">👶 Enfant</option>
-                    </select>
-                    <select value={acc.preference} onChange={(e) => handleAccompagnantChange(index, 'preference', e.target.value)}
-                      className="p-2 border border-gray-200 rounded-lg bg-white">
-                      <option value="">Menu...</option>
-                      <option value="classique">🍽️ Classique</option>
-                      <option value="vegetarien">🥬 Végétarien</option>
-                      <option value="sans-porc">🚫🐷 Sans porc</option>
                     </select>
                   </div>
                   <input type="text" placeholder="Allergies (optionnel)" value={acc.allergies}
@@ -990,7 +895,7 @@ export default function RSVPMariage() {
 
           {/* Submit */}
           <button type="submit"
-            disabled={loading || !formData.prenom || !formData.nom || !formData.email || formData.ceremonie === null || formData.soiree === null || (formData.soiree && !formData.preference) || formData.accompagnants.some(a => !a.prenom || !a.nom)}
+            disabled={loading || !formData.prenom || !formData.nom || !formData.email || !formData.telephone || formData.ceremonie === null || formData.soiree === null || formData.accompagnants.some(a => !a.prenom || !a.nom)}
             className="w-full p-4 bg-gradient-to-r from-rose-500 to-rose-400 text-white rounded-xl font-medium hover:from-rose-600 hover:to-rose-500 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-lg">
             {loading ? (
               <><span className="animate-spin">⏳</span> Envoi...</>
