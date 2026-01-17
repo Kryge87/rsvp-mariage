@@ -6,7 +6,7 @@ import { createClient } from '@supabase/supabase-js';
 // ⚠️ CONFIGURATION SUPABASE
 const supabase = createClient(
   'https://qenjqlkuucdtpsgycmca.supabase.co',
-  'sb_publishable_rBVmIn3PcOE6N-lvxSQqLQ_1eB-5tL-'
+  'sb_publishable_rBVmIn3PcOE6Nfecdcdevef-efe-fefafe'
 );
 
 // ⚠️ CONFIGURATION ADMIN
@@ -178,9 +178,12 @@ export default function RSVPMariage() {
 
   const saveResponse = async (newResponse) => {
     try {
-      const { data, error } = await supabase
-        .from('rsvp_responses')
-        .insert([{
+      const invitePrincipal = `${newResponse.prenom} ${newResponse.nom}`;
+      
+      // Créer un tableau avec l'invité principal et tous les accompagnants
+      const allRows = [
+        // Invité principal
+        {
           prenom: newResponse.prenom,
           nom: newResponse.nom,
           email: newResponse.email,
@@ -189,9 +192,27 @@ export default function RSVPMariage() {
           ceremonie: newResponse.ceremonie,
           soiree: newResponse.soiree,
           allergies: newResponse.allergies,
-          accompagnants: newResponse.accompagnants
-        }])
-        .select();
+          role: 'Invité principal',
+          invite_principal: invitePrincipal
+        },
+        // Accompagnants
+        ...newResponse.accompagnants.map(acc => ({
+          prenom: acc.prenom,
+          nom: acc.nom,
+          email: '',
+          telephone: '',
+          type: acc.type,
+          ceremonie: newResponse.ceremonie,
+          soiree: newResponse.soiree,
+          allergies: acc.allergies || '',
+          role: 'Accompagnant',
+          invite_principal: invitePrincipal
+        }))
+      ];
+      
+      const { error } = await supabase
+        .from('rsvp_responses')
+        .insert(allRows);
       
       if (error) throw error;
       await loadResponses();
@@ -216,8 +237,24 @@ export default function RSVPMariage() {
     }
   };
 
+  const deleteGroup = async (invitePrincipal) => {
+    if (confirm(`Supprimer ${invitePrincipal} et ses accompagnants ?`)) {
+      try {
+        const { error } = await supabase
+          .from('rsvp_responses')
+          .delete()
+          .eq('invite_principal', invitePrincipal);
+        
+        if (error) throw error;
+        await loadResponses();
+      } catch (e) {
+        console.error('Erreur suppression groupe:', e);
+      }
+    }
+  };
+
   const startEdit = (response) => {
-    setEditingResponse({ ...response, accompagnants: response.accompagnants || [] });
+    setEditingResponse({ ...response });
   };
 
   const cancelEdit = () => {
@@ -236,8 +273,7 @@ export default function RSVPMariage() {
           type: editingResponse.type,
           ceremonie: editingResponse.ceremonie,
           soiree: editingResponse.soiree,
-          allergies: editingResponse.allergies,
-          accompagnants: editingResponse.accompagnants
+          allergies: editingResponse.allergies
         })
         .eq('id', editingResponse.id);
       
@@ -253,31 +289,13 @@ export default function RSVPMariage() {
     setEditingResponse({ ...editingResponse, [field]: value });
   };
 
-  const updateEditAccompagnant = (index, field, value) => {
-    const newAccompagnants = [...editingResponse.accompagnants];
-    newAccompagnants[index] = { ...newAccompagnants[index], [field]: value };
-    setEditingResponse({ ...editingResponse, accompagnants: newAccompagnants });
-  };
-
-  const addEditAccompagnant = () => {
-    setEditingResponse({
-      ...editingResponse,
-      accompagnants: [...editingResponse.accompagnants, { prenom: '', nom: '', type: 'adulte', allergies: '' }]
-    });
-  };
-
-  const removeEditAccompagnant = (index) => {
-    const newAccompagnants = editingResponse.accompagnants.filter((_, i) => i !== index);
-    setEditingResponse({ ...editingResponse, accompagnants: newAccompagnants });
-  };
-
   const clearAll = async () => {
     if (confirm('Supprimer toutes les réponses ?')) {
       try {
         const { error } = await supabase
           .from('rsvp_responses')
           .delete()
-          .neq('id', 0); // Supprime tout
+          .neq('id', 0);
         
         if (error) throw error;
         setResponses([]);
@@ -313,39 +331,19 @@ export default function RSVPMariage() {
 
   const exportCSV = () => {
     const headers = ['Date', 'Prénom', 'Nom', 'Email', 'Téléphone', 'Type', 'Cérémonie', 'Soirée', 'Allergies', 'Rôle', 'Invité principal'];
-    const rows = [];
-    
-    responses.forEach(r => {
-      rows.push([
-        new Date(r.created_at).toLocaleDateString('fr-FR'),
-        r.prenom,
-        r.nom,
-        r.email || '',
-        r.telephone || '',
-        r.type === 'enfant' ? 'Enfant' : 'Adulte',
-        r.ceremonie ? 'Oui' : 'Non',
-        r.soiree ? 'Oui' : 'Non',
-        r.allergies || '',
-        'Invité principal',
-        `${r.prenom} ${r.nom}`
-      ]);
-      
-      r.accompagnants?.forEach(a => {
-        rows.push([
-          new Date(r.created_at).toLocaleDateString('fr-FR'),
-          a.prenom,
-          a.nom || '',
-          '',
-          '',
-          a.type === 'enfant' ? 'Enfant' : 'Adulte',
-          r.ceremonie ? 'Oui' : 'Non',
-          r.soiree ? 'Oui' : 'Non',
-          a.allergies || '',
-          'Accompagnant',
-          `${r.prenom} ${r.nom}`
-        ]);
-      });
-    });
+    const rows = responses.map(r => [
+      new Date(r.created_at).toLocaleDateString('fr-FR'),
+      r.prenom,
+      r.nom,
+      r.email || '',
+      r.telephone || '',
+      r.type === 'enfant' ? 'Enfant' : 'Adulte',
+      r.ceremonie ? 'Oui' : 'Non',
+      r.soiree ? 'Oui' : 'Non',
+      r.allergies || '',
+      r.role,
+      r.invite_principal
+    ]);
     
     const csv = '\uFEFF' + [headers, ...rows].map(row => row.map(cell => `"${cell}"`).join(';')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -358,13 +356,12 @@ export default function RSVPMariage() {
 
   const stats = {
     total: responses.length,
-    adultes: responses.filter(r => r.type === 'adulte').length + 
-             responses.reduce((acc, r) => acc + (r.accompagnants?.filter(a => a.type === 'adulte').length || 0), 0),
-    enfants: responses.filter(r => r.type === 'enfant').length + 
-             responses.reduce((acc, r) => acc + (r.accompagnants?.filter(a => a.type === 'enfant').length || 0), 0),
+    adultes: responses.filter(r => r.type === 'adulte').length,
+    enfants: responses.filter(r => r.type === 'enfant').length,
     ceremonie: responses.filter(r => r.ceremonie).length,
     soiree: responses.filter(r => r.soiree).length,
-    totalPersonnes: responses.reduce((acc, r) => acc + 1 + (r.accompagnants?.length || 0), 0)
+    invitesPrincipaux: responses.filter(r => r.role === 'Invité principal').length,
+    accompagnants: responses.filter(r => r.role === 'Accompagnant').length
   };
 
   // ========== VUE ADMIN ==========
@@ -502,16 +499,21 @@ export default function RSVPMariage() {
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
               <div className="bg-rose-50 rounded-xl p-3 text-center">
-                <div className="text-2xl">📝</div>
+                <div className="text-2xl">👥</div>
                 <div className="text-2xl font-bold text-gray-800">{stats.total}</div>
-                <div className="text-xs text-gray-600">Réponses</div>
+                <div className="text-xs text-gray-600">Total personnes</div>
               </div>
               <div className="bg-amber-50 rounded-xl p-3 text-center">
-                <div className="text-2xl">👥</div>
-                <div className="text-2xl font-bold text-gray-800">{stats.totalPersonnes}</div>
-                <div className="text-xs text-gray-600">Personnes</div>
+                <div className="text-2xl">📝</div>
+                <div className="text-2xl font-bold text-gray-800">{stats.invitesPrincipaux}</div>
+                <div className="text-xs text-gray-600">Réponses</div>
+              </div>
+              <div className="bg-cyan-50 rounded-xl p-3 text-center">
+                <div className="text-2xl">👫</div>
+                <div className="text-2xl font-bold text-gray-800">{stats.accompagnants}</div>
+                <div className="text-xs text-gray-600">Accompagnants</div>
               </div>
               <div className="bg-blue-50 rounded-xl p-3 text-center">
                 <div className="text-2xl">🧑</div>
@@ -543,27 +545,30 @@ export default function RSVPMariage() {
                 <thead className="bg-gray-50 text-left">
                   <tr>
                     <th className="px-4 py-3 font-medium text-gray-600">Date</th>
+                    <th className="px-4 py-3 font-medium text-gray-600">Prénom</th>
                     <th className="px-4 py-3 font-medium text-gray-600">Nom</th>
+                    <th className="px-4 py-3 font-medium text-gray-600">Email</th>
+                    <th className="px-4 py-3 font-medium text-gray-600">Téléphone</th>
                     <th className="px-4 py-3 font-medium text-gray-600">Type</th>
                     <th className="px-4 py-3 font-medium text-gray-600 text-center">Cérémonie</th>
                     <th className="px-4 py-3 font-medium text-gray-600 text-center">Soirée</th>
                     <th className="px-4 py-3 font-medium text-gray-600">Allergies</th>
-                    <th className="px-4 py-3 font-medium text-gray-600">Accompagnants</th>
+                    <th className="px-4 py-3 font-medium text-gray-600">Rôle</th>
+                    <th className="px-4 py-3 font-medium text-gray-600">Invité principal</th>
                     <th className="px-4 py-3 font-medium text-gray-600 text-center">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {responses.length === 0 ? (
-                    <tr><td colSpan="8" className="px-4 py-8 text-center text-gray-400">Aucune réponse pour le moment</td></tr>
+                    <tr><td colSpan="12" className="px-4 py-8 text-center text-gray-400">Aucune réponse pour le moment</td></tr>
                   ) : (
                     responses.map((r) => (
-                      <tr key={r.id} className="hover:bg-gray-50">
+                      <tr key={r.id} className={`hover:bg-gray-50 ${r.role === 'Accompagnant' ? 'bg-gray-50/50' : ''}`}>
                         <td className="px-4 py-3 text-gray-500">{new Date(r.created_at).toLocaleDateString('fr-FR')}</td>
-                        <td className="px-4 py-3">
-                          <div className="font-medium text-gray-800">{r.prenom} {r.nom}</div>
-                          {r.email && <div className="text-xs text-gray-400">{r.email}</div>}
-                          {r.telephone && <div className="text-xs text-gray-400">{r.telephone}</div>}
-                        </td>
+                        <td className="px-4 py-3 font-medium text-gray-800">{r.prenom}</td>
+                        <td className="px-4 py-3 text-gray-800">{r.nom}</td>
+                        <td className="px-4 py-3 text-gray-600">{r.email || '-'}</td>
+                        <td className="px-4 py-3 text-gray-600">{r.telephone || '-'}</td>
                         <td className="px-4 py-3">
                           <span className={`px-2 py-1 rounded-full text-xs ${r.type === 'enfant' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
                             {r.type === 'enfant' ? '👶 Enfant' : '🧑 Adulte'}
@@ -581,16 +586,11 @@ export default function RSVPMariage() {
                         </td>
                         <td className="px-4 py-3 text-gray-600 max-w-[150px] truncate">{r.allergies || '-'}</td>
                         <td className="px-4 py-3">
-                          {r.accompagnants?.length > 0 ? (
-                            <div className="space-y-1">
-                              {r.accompagnants.map((a, i) => (
-                                <div key={i} className="text-xs bg-gray-100 rounded px-2 py-1">
-                                  {a.prenom} {a.nom || ''} {a.type === 'enfant' ? '👶' : '🧑'}
-                                </div>
-                              ))}
-                            </div>
-                          ) : '-'}
+                          <span className={`px-2 py-1 rounded-full text-xs ${r.role === 'Invité principal' ? 'bg-rose-100 text-rose-700' : 'bg-gray-100 text-gray-600'}`}>
+                            {r.role === 'Invité principal' ? '⭐ Principal' : '👤 Accomp.'}
+                          </span>
                         </td>
+                        <td className="px-4 py-3 text-gray-600">{r.invite_principal}</td>
                         <td className="px-4 py-3 text-center">
                           <div className="flex justify-center gap-1">
                             <button onClick={() => startEdit(r)} className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg" title="Modifier">✏️</button>
@@ -633,17 +633,17 @@ export default function RSVPMariage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-600 mb-1">Email <span className="text-red-500">*</span></label>
+                    <label className="block text-sm font-medium text-gray-600 mb-1">Email</label>
                     <input type="email" value={editingResponse.email || ''}
                       onChange={(e) => updateEditField('email', e.target.value)}
-                      className={`w-full p-3 border rounded-lg ${!editingResponse.email ? 'border-red-300 bg-red-50' : 'border-gray-200'}`} />
+                      className="w-full p-3 border border-gray-200 rounded-lg" />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-600 mb-1">Téléphone <span className="text-red-500">*</span></label>
+                    <label className="block text-sm font-medium text-gray-600 mb-1">Téléphone</label>
                     <input type="tel" value={editingResponse.telephone || ''}
                       onChange={(e) => updateEditField('telephone', e.target.value)}
-                      className={`w-full p-3 border rounded-lg ${!editingResponse.telephone ? 'border-red-300 bg-red-50' : 'border-gray-200'}`} />
+                      className="w-full p-3 border border-gray-200 rounded-lg" />
                   </div>
 
                   <div>
@@ -701,42 +701,6 @@ export default function RSVPMariage() {
                       onChange={(e) => updateEditField('allergies', e.target.value)}
                       className="w-full p-3 border border-gray-200 rounded-lg" />
                   </div>
-
-                  <div>
-                    <div className="flex justify-between items-center mb-3">
-                      <label className="text-sm font-medium text-gray-600">Accompagnants ({editingResponse.accompagnants?.length || 0})</label>
-                      <button type="button" onClick={addEditAccompagnant}
-                        className="px-3 py-1 bg-rose-100 text-rose-600 rounded-lg text-sm hover:bg-rose-200">
-                        + Ajouter
-                      </button>
-                    </div>
-                    {editingResponse.accompagnants?.map((acc, index) => (
-                      <div key={index} className="bg-gray-50 rounded-xl p-4 mb-3">
-                        <div className="flex justify-between items-center mb-3">
-                          <span className="font-medium text-gray-700">Accompagnant {index + 1}</span>
-                          <button type="button" onClick={() => removeEditAccompagnant(index)}
-                            className="text-red-500 hover:text-red-700 text-sm">Supprimer</button>
-                        </div>
-                        <div className="grid grid-cols-3 gap-3">
-                          <input type="text" placeholder="Prénom *" value={acc.prenom}
-                            onChange={(e) => updateEditAccompagnant(index, 'prenom', e.target.value)}
-                            className="p-2 border border-gray-200 rounded-lg" />
-                          <input type="text" placeholder="Nom *" value={acc.nom || ''}
-                            onChange={(e) => updateEditAccompagnant(index, 'nom', e.target.value)}
-                            className="p-2 border border-gray-200 rounded-lg" />
-                          <select value={acc.type}
-                            onChange={(e) => updateEditAccompagnant(index, 'type', e.target.value)}
-                            className="p-2 border border-gray-200 rounded-lg bg-white">
-                            <option value="adulte">🧑 Adulte</option>
-                            <option value="enfant">👶 Enfant</option>
-                          </select>
-                        </div>
-                        <input type="text" placeholder="Allergies (optionnel)" value={acc.allergies || ''}
-                          onChange={(e) => updateEditAccompagnant(index, 'allergies', e.target.value)}
-                          className="w-full p-2 border border-gray-200 rounded-lg mt-3" />
-                      </div>
-                    ))}
-                  </div>
                 </div>
 
                 <div className="p-6 border-t border-gray-100 flex gap-3">
@@ -745,7 +709,7 @@ export default function RSVPMariage() {
                     Annuler
                   </button>
                   <button onClick={saveEdit}
-                    disabled={!editingResponse.prenom || !editingResponse.nom || !editingResponse.email || !editingResponse.telephone}
+                    disabled={!editingResponse.prenom || !editingResponse.nom}
                     className="flex-1 p-3 bg-rose-500 text-white rounded-lg hover:bg-rose-600 disabled:opacity-50">
                     💾 Sauvegarder
                   </button>
