@@ -6,7 +6,7 @@ import { createClient } from '@supabase/supabase-js';
 // ⚠️ CONFIGURATION SUPABASE
 const supabase = createClient(
   'https://qenjqlkuucdtpsgycmca.supabase.co',
-  'sb_publishable_rBVmIn3PcOE6Nfecdcdevef-efe-fefafe'
+  'sb_publishable_rBVmIn3PcOE6N-lvxSQqLQ_1eB-5tL-'
 );
 
 // ⚠️ CONFIGURATION ADMIN
