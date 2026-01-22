@@ -729,13 +729,22 @@ export default function RSVPMariage() {
         <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center">
           <div className="text-6xl mb-4">💕</div>
           <h2 className="text-2xl font-serif text-gray-800 mb-4">Merci {formData.prenom} !</h2>
-          <p className="text-gray-600 mb-6">
+          <p className="text-gray-600 mb-4">
             Votre réponse a bien été enregistrée.
             {(formData.ceremonie || formData.soiree) && " Nous avons hâte de vous retrouver !"}
           </p>
-          <div className="bg-rose-50 rounded-xl p-4 mb-6">
-            <p className="text-rose-700">À très bientôt pour célébrer ce jour si spécial avec nous !</p>
+          
+          <div className="bg-rose-50 rounded-xl p-4 mb-4">
+            <p className="text-rose-700 font-medium mb-2">À très bientôt pour célébrer ce jour si spécial avec nous !</p>
           </div>
+
+          <div className="bg-amber-50 border-l-4 border-amber-400 rounded-lg p-4 mb-6 text-left">
+            <p className="text-amber-800 text-sm">
+              <strong>⚠️ Information importante :</strong><br/>
+              Vous avez été soigneusement sélectionné(e) pour recevoir cette invitation. Chaque place représente un coût important pour nous. Si un empêchement survient, merci de nous prévenir <strong>le plus tôt possible</strong> afin que nous puissions nous organiser au mieux.
+            </p>
+          </div>
+
           <button
             onClick={() => {
               setSubmitted(false);
@@ -765,6 +774,7 @@ export default function RSVPMariage() {
         </div>
 
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-xl p-6 md:p-8 space-y-8">
+          
           {/* Bloc explicatif */}
           <div className="bg-gradient-to-r from-rose-50 to-amber-50 rounded-xl p-6 border-2 border-rose-200">
             <div className="flex items-start gap-3">
@@ -788,6 +798,7 @@ export default function RSVPMariage() {
               </div>
             </div>
           </div>
+          
           {/* Identité */}
           <div>
             <h2 className="text-lg font-medium text-gray-800 mb-4 flex items-center gap-2">
@@ -816,7 +827,7 @@ export default function RSVPMariage() {
             <div className="mb-4">
               <label className="block text-sm text-gray-600 mb-1">Email <span className="text-red-500">*</span></label>
               <input
-                type="email" value={formData.email}
+                type="email" required value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 className={`w-full p-3 border rounded-xl focus:ring-2 focus:ring-rose-200 focus:border-rose-400 outline-none ${!formData.email ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}
                 placeholder="votre@email.com"
@@ -825,12 +836,52 @@ export default function RSVPMariage() {
             <div className="mb-4">
               <label className="block text-sm text-gray-600 mb-1">Téléphone <span className="text-red-500">*</span></label>
               <input
-                type="tel" value={formData.telephone}
+                type="tel" required value={formData.telephone}
                 onChange={(e) => setFormData({ ...formData, telephone: e.target.value })}
                 className={`w-full p-3 border rounded-xl focus:ring-2 focus:ring-rose-200 focus:border-rose-400 outline-none ${!formData.telephone ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}
                 placeholder="0696 12 34 56"
               />
             </div>
+          </div>
+
+          {/* Accompagnants */}
+          <div>
+            <h2 className="text-lg font-medium text-gray-800 mb-4 flex items-center gap-2">
+              <span>👥</span> Accompagnants
+            </h2>
+            
+            <div className="flex items-center gap-4 mb-4">
+              <span className="text-sm text-gray-600">Nombre :</span>
+              <div className="flex items-center gap-2">
+                <button type="button" onClick={() => handleNbAccompagnantsChange(formData.nbAccompagnants - 1)}
+                  className="w-10 h-10 rounded-full border border-gray-300 hover:bg-gray-100 flex items-center justify-center text-xl font-bold">-</button>
+                <span className="w-8 text-center font-bold text-lg">{formData.nbAccompagnants}</span>
+                <button type="button" onClick={() => handleNbAccompagnantsChange(formData.nbAccompagnants + 1)}
+                  className="w-10 h-10 rounded-full border border-gray-300 hover:bg-gray-100 flex items-center justify-center text-xl font-bold">+</button>
+              </div>
+            </div>
+
+            {formData.accompagnants.map((acc, index) => (
+              <div key={index} className="bg-gray-50 rounded-xl p-4 mb-3">
+                <div className="font-medium text-gray-700 mb-3">Accompagnant {index + 1} <span className="text-red-500">*</span></div>
+                <div className="grid grid-cols-3 gap-3">
+                  <input type="text" placeholder="Prénom *" value={acc.prenom}
+                    onChange={(e) => handleAccompagnantChange(index, 'prenom', e.target.value)}
+                    className={`p-2 border rounded-lg ${!acc.prenom ? 'border-red-300 bg-red-50' : 'border-gray-200'}`} />
+                  <input type="text" placeholder="Nom *" value={acc.nom || ''}
+                    onChange={(e) => handleAccompagnantChange(index, 'nom', e.target.value)}
+                    className={`p-2 border rounded-lg ${!acc.nom ? 'border-red-300 bg-red-50' : 'border-gray-200'}`} />
+                  <select value={acc.type} onChange={(e) => handleAccompagnantChange(index, 'type', e.target.value)}
+                    className="p-2 border border-gray-200 rounded-lg bg-white">
+                    <option value="adulte">🧑 Adulte</option>
+                    <option value="enfant">👶 Enfant</option>
+                  </select>
+                </div>
+                <input type="text" placeholder="Allergies (optionnel)" value={acc.allergies}
+                  onChange={(e) => handleAccompagnantChange(index, 'allergies', e.target.value)}
+                  className="w-full p-2 border border-gray-200 rounded-lg mt-3" />
+              </div>
+            ))}
           </div>
 
           {/* Présence */}
@@ -893,48 +944,6 @@ export default function RSVPMariage() {
               )}
             </div>
           </div>
-
-          {/* Accompagnants */}
-          {(formData.ceremonie || formData.soiree) && (
-            <div>
-              <h2 className="text-lg font-medium text-gray-800 mb-4 flex items-center gap-2">
-                <span>👥</span> Accompagnants
-              </h2>
-              
-              <div className="flex items-center gap-4 mb-4">
-                <span className="text-sm text-gray-600">Nombre :</span>
-                <div className="flex items-center gap-2">
-                  <button type="button" onClick={() => handleNbAccompagnantsChange(formData.nbAccompagnants - 1)}
-                    className="w-10 h-10 rounded-full border border-gray-300 hover:bg-gray-100 flex items-center justify-center text-xl font-bold">-</button>
-                  <span className="w-8 text-center font-bold text-lg">{formData.nbAccompagnants}</span>
-                  <button type="button" onClick={() => handleNbAccompagnantsChange(formData.nbAccompagnants + 1)}
-                    className="w-10 h-10 rounded-full border border-gray-300 hover:bg-gray-100 flex items-center justify-center text-xl font-bold">+</button>
-                </div>
-              </div>
-
-              {formData.accompagnants.map((acc, index) => (
-                <div key={index} className="bg-gray-50 rounded-xl p-4 mb-3">
-                  <div className="font-medium text-gray-700 mb-3">Accompagnant {index + 1} <span className="text-red-500">*</span></div>
-                  <div className="grid grid-cols-3 gap-3">
-                    <input type="text" placeholder="Prénom *" value={acc.prenom}
-                      onChange={(e) => handleAccompagnantChange(index, 'prenom', e.target.value)}
-                      className={`p-2 border rounded-lg ${!acc.prenom ? 'border-red-300 bg-red-50' : 'border-gray-200'}`} />
-                    <input type="text" placeholder="Nom *" value={acc.nom || ''}
-                      onChange={(e) => handleAccompagnantChange(index, 'nom', e.target.value)}
-                      className={`p-2 border rounded-lg ${!acc.nom ? 'border-red-300 bg-red-50' : 'border-gray-200'}`} />
-                    <select value={acc.type} onChange={(e) => handleAccompagnantChange(index, 'type', e.target.value)}
-                      className="p-2 border border-gray-200 rounded-lg bg-white">
-                      <option value="adulte">🧑 Adulte</option>
-                      <option value="enfant">👶 Enfant</option>
-                    </select>
-                  </div>
-                  <input type="text" placeholder="Allergies (optionnel)" value={acc.allergies}
-                    onChange={(e) => handleAccompagnantChange(index, 'allergies', e.target.value)}
-                    className="w-full p-2 border border-gray-200 rounded-lg mt-3" />
-                </div>
-              ))}
-            </div>
-          )}
 
           {/* Submit */}
           <button type="submit"
