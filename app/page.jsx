@@ -765,7 +765,29 @@ export default function RSVPMariage() {
         </div>
 
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-xl p-6 md:p-8 space-y-8">
-          
+          {/* Bloc explicatif */}
+          <div className="bg-gradient-to-r from-rose-50 to-amber-50 rounded-xl p-6 border-2 border-rose-200">
+            <div className="flex items-start gap-3">
+              <div className="text-3xl">ℹ️</div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-gray-800 mb-3 text-lg">Comment remplir ce formulaire ?</h3>
+                <div className="space-y-2 text-sm text-gray-700">
+                  <p className="flex items-start gap-2">
+                    <span className="text-rose-500 font-bold">1.</span>
+                    <span><strong>Vos informations :</strong> Indiquez vos propres nom, prénom, email et téléphone</span>
+                  </p>
+                  <p className="flex items-start gap-2">
+                    <span className="text-rose-500 font-bold">2.</span>
+                    <span><strong>Accompagnants :</strong> Ajoutez les autres membres de votre famille (conjoint, enfants...)</span>
+                  </p>
+                  <p className="flex items-start gap-2">
+                    <span className="text-rose-500 font-bold">3.</span>
+                    <span><strong>Prenez votre temps :</strong> Vérifiez que tous les champs obligatoires <span className="text-red-500">*</span> sont bien remplis</span>
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
           {/* Identité */}
           <div>
             <h2 className="text-lg font-medium text-gray-800 mb-4 flex items-center gap-2">
@@ -822,7 +844,7 @@ export default function RSVPMariage() {
               <label className="block text-base font-bold text-gray-800 mb-3 flex items-center gap-2">
                 <span className="text-2xl">💒</span> La Cérémonie <span className="text-red-500">*</span>
               </label>
-              <p className="text-sm text-gray-500 mb-3">Mariage civil et/ou religieux</p>
+              <p className="text-sm text-gray-500 mb-3">Cérémonie religieuse</p>
               <div className="flex gap-3">
                 <button type="button" onClick={() => setFormData({ ...formData, ceremonie: true })}
                   className={`flex-1 p-4 rounded-xl border-2 transition ${formData.ceremonie === true ? 'border-green-400 bg-green-50' : 'border-gray-200 bg-white hover:border-gray-300'}`}>
